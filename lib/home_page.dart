@@ -11,8 +11,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Map<String, bool> expandedCards = {};
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,18 +33,18 @@ class _HomePageState extends State<HomePage> {
 
           return Padding(
             padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Customer Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
-                Text("Name: $name", style: TextStyle(fontSize: 16)),
-                Text("Email: $email", style: TextStyle(fontSize: 16)),
-                Text("Phone: $phone", style: TextStyle(fontSize: 16)),
-                Divider(thickness: 2, height: 30),
-                Text("Available Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: FutureBuilder<QuerySnapshot>(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Customer Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text("Name: $name", style: TextStyle(fontSize: 16)),
+                  Text("Email: $email", style: TextStyle(fontSize: 16)),
+                  Text("Phone: $phone", style: TextStyle(fontSize: 16)),
+                  Divider(thickness: 2, height: 30),
+                  Text("Available Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  FutureBuilder<QuerySnapshot>(
                     future: FirebaseFirestore.instance.collection("services").get(),
                     builder: (context, serviceSnapshot) {
                       if (serviceSnapshot.connectionState == ConnectionState.waiting) {
@@ -60,97 +58,116 @@ class _HomePageState extends State<HomePage> {
                       List<QueryDocumentSnapshot> services = serviceSnapshot.data!.docs;
 
                       return ListView.builder(
+                        shrinkWrap: true,  // Ensures list view only takes up space for its content
+                        physics: NeverScrollableScrollPhysics(),  // Prevents scroll conflicts with parent scroll view
                         itemCount: services.length,
                         itemBuilder: (context, index) {
                           var service = services[index].data() as Map<String, dynamic>;
-                          bool isExpanded = expandedCards[service['name']] ?? false;
-                          return Card(
-                            elevation: 4,
-                            margin: EdgeInsets.symmetric(vertical: 10),
-                            child: Padding(
-                              padding: EdgeInsets.all(10),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(
-                                        image: NetworkImage(service['icon']),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          service['name'],
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          service['short_description'],
-                                          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                                        ),
-                                        if (isExpanded) ...[
-                                          SizedBox(height: 5),
-                                          Text(
-                                            service['full_description'],
-                                            style: TextStyle(fontSize: 14, color: Colors.black87),
-                                          ),
-                                        ],
-                                        SizedBox(height: 10),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              "₹${service['price']}",
-                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
-                                            ),
-                                            Row(
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      expandedCards[service['name']] = !isExpanded;
-                                                    });
-                                                  },
-                                                  child: Text(isExpanded ? "Less" : "More"),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    // Navigate to booking page
-                                                  },
-                                                  child: Text("Book Now"),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
+                          return ServiceCard(service: service);
                         },
                       );
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class ServiceCard extends StatefulWidget {
+  final Map<String, dynamic> service;
+
+  ServiceCard({required this.service});
+
+  @override
+  _ServiceCardState createState() => _ServiceCardState();
+}
+
+class _ServiceCardState extends State<ServiceCard> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.symmetric(vertical: 10),
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: NetworkImage(widget.service['icon']),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.service['name'],
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    widget.service['short_description'],
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                  if (isExpanded) ...[
+                    SizedBox(height: 5),
+                    Text(
+                      widget.service['full_description'],
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                  ],
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "₹${widget.service['price']}",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                      ),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                isExpanded = !isExpanded;
+                              });
+                            },
+                            child: Text(isExpanded ? "Less" : "More"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Navigate to booking page
+                            },
+                            child: Text("Book Now"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
