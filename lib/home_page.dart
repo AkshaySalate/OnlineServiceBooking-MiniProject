@@ -157,7 +157,7 @@ class _ServiceCardState extends State<ServiceCard> {
                             onPressed: () {
                               // Navigate to booking page
                             },
-                            child: Text("Book Now"),
+                            child: Text("Book"),
                           ),
                         ],
                       ),
