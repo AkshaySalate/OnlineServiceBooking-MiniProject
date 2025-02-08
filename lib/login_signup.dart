@@ -163,84 +163,161 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.5,
+            colors: [
+              Colors.red.shade300,
+              Colors.red.shade500,
+              Colors.red.shade700,
+              Colors.red.shade900,
+            ],
+            stops: [0.1, 0.4, 0.7, 1.0],
+          ),
+        ),
+        child: Stack(
           children: [
-            Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
+            // Randomly positioned icons with different sizes
+            Positioned(
+              top: 50,
+              left: 30,
+              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1).toDouble()),
+            ),
+            Positioned(
+              top: 150,
+              right: 30,
+              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 2).toDouble()),
+            ),
+            Positioned(
+              bottom: 100,
+              left: 80,
+              child: Icon(Icons.ac_unit, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
+            ),
+            Positioned(
+              bottom: 180,
+              right: 80,
+              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 0.8).toDouble()),
+            ),
+            Positioned(
+              top: 100,
+              left: 150,
+              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.2).toDouble()),
+            ),
+            Positioned(
+              top: 200,
+              left: 200,
+              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
+            ),
+            Positioned(
+              bottom: 50,
+              right: 150,
+              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.1).toDouble()),
+            ),
+            Positioned(
+              top: 250,
+              left: 250,
+              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 0.9).toDouble()),
+            ),
+            Positioned(
+              bottom: 250,
+              right: 250,
+              child: Icon(Icons.ac_unit, color: Colors.red.shade200, size: 20 + (30 * 1.3).toDouble()),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Container background color
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 20),
 
-            // Show Name & Phone field only for Sign-Up
-            if (!isLogin)
-              Column(
-                children: [
-                  TextField(controller: nameController, decoration: InputDecoration(labelText: "Full Name")),
-                  TextField(controller: phoneController, decoration: InputDecoration(labelText: "Phone")),
-                ],
-              ),
+                          // Show Name & Phone field only for Sign-Up
+                          if (!isLogin)
+                            Column(
+                              children: [
+                                TextField(controller: nameController, decoration: InputDecoration(labelText: "Full Name")),
+                                TextField(controller: phoneController, decoration: InputDecoration(labelText: "Phone")),
+                              ],
+                            ),
 
-            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(
-                labelText: "Password",
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+                          TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
+                          TextField(
+                            controller: passwordController,
+                            decoration: InputDecoration(
+                              labelText: "Password",
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            obscureText: _obscurePassword,
+                          ),
+
+                          // Show Role Selection for Sign-Up
+                          if (!isLogin)
+                            DropdownButton<String>(
+                              value: role,
+                              items: ["customer", "service_provider"].map((role) {
+                                return DropdownMenuItem(value: role, child: Text(role));
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  role = value!;
+                                });
+                              },
+                            ),
+
+                          // Show Location and Services Offered only for Service Provider
+                          if (role == "service_provider")
+                            Column(
+                              children: [
+                                currentLocation == null
+                                    ? CircularProgressIndicator()  // Show loading while fetching location
+                                    : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}"),
+                                TextField(
+                                  controller: servicesController,
+                                  decoration: InputDecoration(labelText: "Services Offered (comma separated)"),
+                                ),
+                              ],
+                            ),
+
+                          SizedBox(height: 20),
+
+                          ElevatedButton(
+                            onPressed: () {
+                              isLogin ? login() : signUp();
+                            },
+                            child: Text(isLogin ? "Login" : "Sign Up"),
+                          ),
+
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                isLogin = !isLogin;
+                              });
+                            },
+                            child: Text(isLogin ? "Create an account" : "Already have an account? Login"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              obscureText: _obscurePassword,
-            ),
-
-            // Show Role Selection for Sign-Up
-            if (!isLogin)
-              DropdownButton<String>(
-                value: role,
-                items: ["customer", "service_provider"].map((role) {
-                  return DropdownMenuItem(value: role, child: Text(role));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    role = value!;
-                  });
-                },
-              ),
-
-            // Show Location and Services Offered only for Service Provider
-            if (role == "service_provider")
-              Column(
-                children: [
-                  currentLocation == null
-                      ? CircularProgressIndicator()  // Show loading while fetching location
-                      : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}"),
-                  TextField(
-                    controller: servicesController,
-                    decoration: InputDecoration(labelText: "Services Offered (comma separated)"),
-                  ),
-                ],
-              ),
-
-            SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: () {
-                isLogin ? login() : signUp();
-              },
-              child: Text(isLogin ? "Login" : "Sign Up"),
-            ),
-
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  isLogin = !isLogin;
-                });
-              },
-              child: Text(isLogin ? "Create an account" : "Already have an account? Login"),
             ),
           ],
         ),
