@@ -28,7 +28,6 @@ class _HomePageState extends State<HomePage> {
             return Center(child: Text("Error: Customer data not found."));
           }
 
-          // Extract user details
           var customerData = snapshot.data!;
           String name = customerData.get('name');
           String email = customerData.get('email');
@@ -39,17 +38,12 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Customer Details
                 Text("Customer Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 8),
                 Text("Name: $name", style: TextStyle(fontSize: 16)),
                 Text("Email: $email", style: TextStyle(fontSize: 16)),
                 Text("Phone: $phone", style: TextStyle(fontSize: 16)),
-
-                // Divider
                 Divider(thickness: 2, height: 30),
-
-                // Available Services Section
                 Text("Available Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 Expanded(
                   child: FutureBuilder<QuerySnapshot>(
@@ -58,6 +52,7 @@ class _HomePageState extends State<HomePage> {
                       if (serviceSnapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
+
                       if (!serviceSnapshot.hasData || serviceSnapshot.data!.docs.isEmpty) {
                         return Center(child: Text("No services available."));
                       }
@@ -68,40 +63,79 @@ class _HomePageState extends State<HomePage> {
                         itemCount: services.length,
                         itemBuilder: (context, index) {
                           var service = services[index].data() as Map<String, dynamic>;
-                          String serviceName = service['name'];
-                          String iconUrl = service['icon'];
-                          String shortDescription = service['short_description'];
-                          String fullDescription = service['full_description'];
-                          bool isExpanded = expandedCards[serviceName] ?? false;
-
+                          bool isExpanded = expandedCards[service['name']] ?? false;
                           return Card(
                             elevation: 4,
                             margin: EdgeInsets.symmetric(vertical: 10),
                             child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
+                              padding: EdgeInsets.all(10),
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Image.network(iconUrl, width: 40, height: 40),
-                                      SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(serviceName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: NetworkImage(service['icon']),
+                                        fit: BoxFit.cover,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  SizedBox(height: 8),
-                                  Text(isExpanded ? fullDescription : shortDescription),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          expandedCards[serviceName] = !isExpanded;
-                                        });
-                                      },
-                                      child: Text(isExpanded ? "Show Less" : "More", style: TextStyle(color: Colors.blue)),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service['name'],
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 5),
+                                        Text(
+                                          service['short_description'],
+                                          style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                        ),
+                                        if (isExpanded) ...[
+                                          SizedBox(height: 5),
+                                          Text(
+                                            service['full_description'],
+                                            style: TextStyle(fontSize: 14, color: Colors.black87),
+                                          ),
+                                        ],
+                                        SizedBox(height: 10),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "₹${service['price']}",
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                                            ),
+                                            Row(
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      expandedCards[service['name']] = !isExpanded;
+                                                    });
+                                                  },
+                                                  child: Text(isExpanded ? "Less" : "More"),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    // Navigate to booking page
+                                                  },
+                                                  child: Text("Book Now"),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
