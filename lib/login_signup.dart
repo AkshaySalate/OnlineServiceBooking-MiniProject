@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';  // For getting location
 import 'package:permission_handler/permission_handler.dart';
 import 'home_page.dart';
 import 'package:online_service_booking/provider/home_page.dart';
+import 'dart:math';
 
 class LoginSignupPage extends StatefulWidget {
   @override
@@ -12,6 +13,7 @@ class LoginSignupPage extends StatefulWidget {
 }
 
 class _LoginSignupPageState extends State<LoginSignupPage> {
+  final Random random = Random();
   bool _obscurePassword = true;
   bool isLogin = true;
   final TextEditingController emailController = TextEditingController();
@@ -160,8 +162,60 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     }
   }
 
+  // List of icons to choose from
+  final List<IconData> iconList = [
+    Icons.local_florist,
+    Icons.eco,
+    Icons.ac_unit,
+    //Icons.star,
+    //Icons.favorite,
+    //Icons.cloud,
+  ];
+
+
+  // Generates a random Positioned icon
+  Positioned randomIcon(double screenWidth, double screenHeight) {
+    double left = random.nextDouble() * (screenWidth - 50); // Random left within bounds
+    double top = random.nextDouble() * (screenHeight - 50); // Random top within bounds
+    double size = 20 + random.nextDouble() * 40; // Size between 20 and 60
+    IconData icon = iconList[random.nextInt(iconList.length)]; // Random icon
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: Icon(icon, color: Colors.red.shade200, size: size),
+    );
+  }
+
+  // Generates icons in a structured yet dynamic layout
+  // Generates randomly scattered icons across the screen
+  List<Widget> generateScatteredIcons(double screenWidth, double screenHeight) {
+    List<Widget> iconWidgets = [];
+    int iconCount = 12; // Adjusted for a well-spread layout
+
+    for (int i = 0; i < iconCount; i++) {
+      double left = random.nextDouble() * screenWidth;
+      double top = random.nextDouble() * screenHeight;
+
+      double iconSize = 30 + random.nextDouble() * 40; // Sizes between 30-70
+      IconData icon = iconList[random.nextInt(iconList.length)];
+
+      iconWidgets.add(
+        Positioned(
+          left: left.clamp(0, screenWidth - iconSize),
+          top: top.clamp(0, screenHeight - iconSize),
+          child: Icon(icon, color: Colors.red.shade200, size: iconSize),
+        ),
+      );
+    }
+
+    return iconWidgets;
+  }
+
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -179,6 +233,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         ),
         child: Stack(
           children: [
+            /*
             // Randomly positioned icons with different sizes
             Positioned(
               top: 50,
@@ -225,6 +280,11 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
               right: 250,
               child: Icon(Icons.ac_unit, color: Colors.red.shade200, size: 20 + (30 * 1.3).toDouble()),
             ),
+            */
+            // Generate 10 random icons
+            //...List.generate(20, (_) => randomIcon(screenWidth, screenHeight,)),
+            // Generate a grid of icons
+            ...generateScatteredIcons(screenWidth, screenHeight),
             Center(
               child: SingleChildScrollView(
                 child: Column(
