@@ -228,7 +228,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
               Colors.red.shade700,
               Colors.red.shade900,
             ],
-            stops: [0.1, 0.4, 0.7, 1.0],
+            stops: [0.01, 0.4, 0.7, 1.0],
           ),
         ),
         child: Stack(
@@ -292,31 +292,56 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                   children: [
                     Container(
                       padding: EdgeInsets.all(20),
+                      width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+                      constraints: BoxConstraints(maxWidth: 400), // Ensures it's not too wide on larger screens
                       decoration: BoxDecoration(
-                        color: Colors.white, // Container background color
-                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.grey.shade300.withOpacity(0.2), // Container background color
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5), // Soft white border
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            spreadRadius: 3,
+                            offset: Offset(3, 3), // 3D depth effect
+                          ),
+                        ],
                       ),
+
                       child: Column(
                         children: [
-                          Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
                           SizedBox(height: 20),
 
                           // Show Name & Phone field only for Sign-Up
                           if (!isLogin)
                             Column(
                               children: [
-                                TextField(controller: nameController, decoration: InputDecoration(labelText: "Full Name")),
-                                TextField(controller: phoneController, decoration: InputDecoration(labelText: "Phone")),
+                                TextField(
+                                  controller: nameController,
+                                  decoration: InputDecoration(labelText: "Full Name", labelStyle: TextStyle(color: Colors.white)),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                TextField(
+                                  controller: phoneController,
+                                  decoration: InputDecoration(labelText: "Phone", labelStyle: TextStyle(color: Colors.white)),
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ],
                             ),
 
-                          TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
+                          TextField(
+                            controller: emailController,
+                            decoration: InputDecoration(labelText: "Email", labelStyle: TextStyle(color: Colors.white)),
+                            style: TextStyle(color: Colors.white),
+                          ),
                           TextField(
                             controller: passwordController,
                             decoration: InputDecoration(
                               labelText: "Password",
+                              labelStyle: TextStyle(color: Colors.white),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white),
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -325,6 +350,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               ),
                             ),
                             obscureText: _obscurePassword,
+                            style: TextStyle(color: Colors.white),
                           ),
 
                           // Show Role Selection for Sign-Up
@@ -332,13 +358,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                             DropdownButton<String>(
                               value: role,
                               items: ["customer", "service_provider"].map((role) {
-                                return DropdownMenuItem(value: role, child: Text(role));
+                                return DropdownMenuItem(value: role, child: Text(role, style: TextStyle(color: Colors.white)));
                               }).toList(),
                               onChanged: (value) {
                                 setState(() {
                                   role = value!;
                                 });
                               },
+                              dropdownColor: Colors.red.shade800,
                             ),
 
                           // Show Location and Services Offered only for Service Provider
@@ -347,32 +374,46 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               children: [
                                 currentLocation == null
                                     ? CircularProgressIndicator()  // Show loading while fetching location
-                                    : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}"),
+                                    : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
                                 TextField(
                                   controller: servicesController,
-                                  decoration: InputDecoration(labelText: "Services Offered (comma separated)"),
+                                  decoration: InputDecoration(labelText: "Services Offered (comma separated)", labelStyle: TextStyle(color: Colors.white)),
+                                  style: TextStyle(color: Colors.white),
                                 ),
                               ],
                             ),
-
                           SizedBox(height: 20),
-
                           ElevatedButton(
                             onPressed: () {
                               isLogin ? login() : signUp();
                             },
-                            child: Text(isLogin ? "Login" : "Sign Up"),
+                            child: Text(
+                              isLogin ? "Login" : "Sign Up",
+                              style: TextStyle(color: Colors.black), // Text color set to white
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF8CB20),
+                              minimumSize: Size(MediaQuery.of(context).size.width * 0.6, 45),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20), // Reduced corner radius
+                              ),
+                            ),
                           ),
 
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                isLogin = !isLogin;
-                              });
-                            },
-                            child: Text(isLogin ? "Create an account" : "Already have an account? Login"),
-                          ),
+                          SizedBox(height: 10),  // Added spacing for better visual appearance
                         ],
+                      ),
+                    ),
+                    // "Create an account" / "Already have an account?" button outside of the container
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          isLogin = !isLogin;
+                        });
+                      },
+                      child: Text(
+                        isLogin ? "Create an account" : "Already have an account? Login",
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                   ],
