@@ -197,7 +197,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       double left = random.nextDouble() * screenWidth;
       double top = random.nextDouble() * screenHeight;
 
-      double iconSize = 30 + random.nextDouble() * 40; // Sizes between 30-70
+      double iconSize = 30 + random.nextDouble() * 60; // Sizes between 30-70
       IconData icon = iconList[random.nextInt(iconList.length)];
 
       iconWidgets.add(
