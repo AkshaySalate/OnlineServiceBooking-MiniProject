@@ -167,6 +167,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     Icons.local_florist,
     Icons.eco,
     Icons.ac_unit,
+    Icons.local_florist_sharp,
     //Icons.star,
     //Icons.favorite,
     //Icons.cloud,
@@ -216,6 +217,61 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
+    List<Widget> generateIcons() {
+      return [
+        Positioned(
+          top: screenHeight * 0.05,
+          left: screenWidth * 0.08,
+          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.17),
+        ),
+        Positioned(
+          top: screenHeight * 0.10,
+          right: screenWidth * 0.12,
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.10),
+        ),
+        Positioned(
+          top: screenHeight * 0.22,
+          left: screenWidth * 0.25,
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
+        ),
+        Positioned(
+          top: screenHeight * 0.25,
+          right: screenWidth * 0.15,
+          child: Icon(Icons.local_florist_sharp, color: Colors.red.shade200, size: screenWidth * 0.19),
+        ),
+        Positioned(
+          bottom: screenHeight * 0.12,
+          left: screenWidth * 0.35,
+          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.20),
+        ),
+        Positioned(
+          bottom: screenHeight * 0.12,
+          right: screenWidth * 0.10,
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
+        ),
+        Positioned(
+          bottom: screenHeight * 0.25,
+          left: screenWidth * 0.05,
+          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.07),
+        ),
+        Positioned(
+          bottom: screenHeight * 0.27,
+          right: screenWidth * 0.10,
+          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.2),
+        ),
+        Positioned(
+          top: screenHeight * 0.40,
+          left: screenWidth * 0.50,
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.09),
+        ),
+        Positioned(
+          bottom: screenHeight * 0.40,
+          left: screenWidth * 0.150,
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.25),
+        ),
+      ];
+    }
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -248,7 +304,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
             Positioned(
               bottom: 100,
               left: 80,
-              child: Icon(Icons.ac_unit, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
+              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
             ),
             Positioned(
               bottom: 180,
@@ -278,13 +334,14 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
             Positioned(
               bottom: 250,
               right: 250,
-              child: Icon(Icons.ac_unit, color: Colors.red.shade200, size: 20 + (30 * 1.3).toDouble()),
-            ),
-            */
+              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 1.3).toDouble()),
+            ),*/
+
             // Generate 10 random icons
             //...List.generate(20, (_) => randomIcon(screenWidth, screenHeight,)),
             // Generate a grid of icons
-            ...generateScatteredIcons(screenWidth, screenHeight),
+            //...generateScatteredIcons(screenWidth, screenHeight),
+            ...generateIcons(),
             Center(
               child: SingleChildScrollView(
                 child: Column(
