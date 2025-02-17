@@ -21,12 +21,18 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController servicesController = TextEditingController();  // For service providers
+  final TextEditingController experienceController = TextEditingController();
 
   String role = "customer"; // Default role selection
+  String? selectedServiceCategoryId;
   Position? currentLocation;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  //Variables to hold msgs
+  String successMessage = "";
+  String errorMessage = "";
 
   // 🔹 Function to Get Current Location
   Future<void> getCurrentLocation() async {
@@ -77,6 +83,16 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
 
       if (userDoc.exists) {
         String userRole = userDoc.get('role');
+        setState(() {
+          successMessage = "✅ Login successful! Welcome back.";
+          errorMessage = "";
+        });
+        // Clear success message after 3 seconds
+        Future.delayed(Duration(seconds: 3), () {
+          setState(() {
+            successMessage = "";
+          });
+        });
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage(customerId: userId)),
@@ -86,15 +102,63 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
         DocumentSnapshot providerDoc = await _firestore.collection("service_providers").doc(userId).get();
         if (providerDoc.exists) {
           String userRole = providerDoc.get('role');
+          setState(() {
+            successMessage = "✅ Login successful! Welcome back.";
+            errorMessage = "";
+          });
+          // Clear success message after 3 seconds
+          Future.delayed(Duration(seconds: 3), () {
+            setState(() {
+              successMessage = "";
+            });
+          });
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => ServiceProviderHomePage(providerId: userId)),
           );
         } else {
+          setState(() {
+            errorMessage = "❌ No matching user found.";
+            successMessage = "";
+          });
+          // Clear error message after 3 seconds
+          Future.delayed(Duration(seconds: 3), () {
+            setState(() {
+              errorMessage = "";
+            });
+          });
           print("Login Error: No matching user found.");
         }
       }
+    }  on FirebaseAuthException catch (e) {
+      setState(() {
+        if (e.code == 'user-not-found') {
+          errorMessage = "❌ No user found for that email.";
+        } else if (e.code == 'wrong-password') {
+          errorMessage = "❌ Wrong password provided.";
+        } else {
+          errorMessage = "❌ Login failed: ${e.message}";
+        }
+        successMessage = "";
+      });
+      // Clear error message after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() {
+          errorMessage = "";
+        });
+      });
+      print("Login Error: ${e.message}");
     } catch (e) {
+      setState(() {
+        errorMessage = "❌ Login failed: $e";
+        successMessage = "";
+      });
+      // Clear error message after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() {
+          errorMessage = "";
+        });
+      });
       print("Login Error: $e");
     }
   }
@@ -110,7 +174,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           print("⚠️ No location obtained! Defaulting to 0,0.");
         }
       }
-
+      //attempt to create user
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -119,6 +183,20 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       String userId = userCredential.user!.uid;
 
       if (role == "service_provider") {
+        // Ensure a service category is selected
+        if (selectedServiceCategoryId == null) {
+          print("❌ Please select a service category.");
+          setState(() {
+            errorMessage = "❌ Please select a service category.";
+          });
+          // Clear the message after 3 seconds
+          Future.delayed(Duration(seconds: 3), () {
+            setState(() {
+              successMessage = "";
+            });
+          });
+          return;
+        }
         // Store service provider details in `service_providers`
         await _firestore.collection("service_providers").doc(userId).set({
           "name": nameController.text.trim(),
@@ -128,7 +206,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           "location": currentLocation != null
               ? GeoPoint(currentLocation!.latitude, currentLocation!.longitude)
               : GeoPoint(0.0, 0.0),
-          "services_offered": servicesController.text.trim().split(","),
+          // Save the selected service category id instead of a comma-separated list
+          "serviceCategory": selectedServiceCategoryId,
+          "availability": true,
+          "experience": int.tryParse(experienceController.text.trim()) ?? 0, // Experience in years
         });
       } else {
         // Store customer details in `users`
@@ -144,9 +225,48 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       }
 
       print("✅ User signed up successfully: $userId");
+      setState(() {
+        successMessage = "✅ Sign-up successful! Welcome to the platform.";
+        errorMessage = ""; // Clear error message
+      });
+      // Clear the message after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() {
+          successMessage = "";
+        });
+      });
 
-    } catch (e) {
-      print("❌ Sign-up Error: $e");
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        if (e.code == 'email-already-in-use') {
+          errorMessage = "❌ This email is already registered. Try logging in.";
+        } else if (e.code == 'weak-password') {
+          errorMessage = "❌ Password must be at least 6 characters.";
+        } else if (e.code == 'invalid-email') {
+          errorMessage = "❌ Please enter a valid email address.";
+        } else if (e.code == 'network-request-failed') {
+          errorMessage = "❌ Network error. Please check your connection.";
+        } else {
+          errorMessage = "❌ Sign-up failed: ${e.message}";
+        }
+        successMessage = ""; // Clear success message
+      });
+      // Clear error message after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() {
+          errorMessage = "";
+        });
+      });
+    }catch (e) {
+      setState(() {
+        errorMessage = "❌ An unexpected error occurred: $e";
+        successMessage = ""; // Clear success message
+      });
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() {
+          errorMessage = "";
+        });
+      });
     }
   }
 
@@ -376,7 +496,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               children: [
                                 TextField(
                                   controller: nameController,
-                                  decoration: InputDecoration(labelText: "Full Name", labelStyle: TextStyle(color: Colors.white)),
+                                  decoration: InputDecoration(labelText: "Business Name", labelStyle: TextStyle(color: Colors.white)),
                                   style: TextStyle(color: Colors.white),
                                 ),
                                 TextField(
@@ -420,9 +540,16 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               onChanged: (value) {
                                 setState(() {
                                   role = value!;
+                                  // Reset the selected service category if role changes.
+                                  if (role != "service_provider") {
+                                    selectedServiceCategoryId = null;
+                                  } else {
+                                    // Optionally, fetch location when service provider is chosen.
+                                    getCurrentLocation();
+                                  }
                                 });
                               },
-                              dropdownColor: Colors.red.shade800,
+                              dropdownColor: Colors.red.shade800.withOpacity(0.6),
                             ),
 
                           // Show Location and Services Offered only for Service Provider
@@ -432,14 +559,57 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                                 currentLocation == null
                                     ? CircularProgressIndicator()  // Show loading while fetching location
                                     : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
-                                TextField(
-                                  controller: servicesController,
-                                  decoration: InputDecoration(labelText: "Services Offered (comma separated)", labelStyle: TextStyle(color: Colors.white)),
-                                  style: TextStyle(color: Colors.white),
+                                SizedBox(height: 10),
+                                // Service Category dropdown fetched from Firestore
+                                FutureBuilder<QuerySnapshot>(
+                                  future: _firestore.collection("services").get(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return CircularProgressIndicator();
+                                    }
+                                    if (snapshot.hasError) {
+                                      return Text("Error: ${snapshot.error}", style: TextStyle(color: Colors.white));
+                                    }
+                                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                      return Text("No service categories available", style: TextStyle(color: Colors.white));
+                                    }
+                                    List<DropdownMenuItem<String>> categoryItems = snapshot.data!.docs.map((doc) {
+                                      // Assuming each document has a field "name" for display purposes.
+                                      String categoryName = doc.data().toString().contains("serviceCategory")
+                                          ? doc.get("serviceCategory")
+                                          : doc.id;
+                                      return DropdownMenuItem<String>(
+                                        value: doc.id,
+                                        child: Text(categoryName, style: TextStyle(color: Colors.white)),
+                                      );
+                                    }).toList();
+
+                                    return DropdownButton<String>(
+                                      value: selectedServiceCategoryId,
+                                      hint: Text("Select Service", style: TextStyle(color: Colors.white)),
+                                      items: categoryItems,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedServiceCategoryId = value;
+                                        });
+                                      },
+                                      dropdownColor: Colors.grey.shade800,
+                                    );
+                                  },
                                 ),
                               ],
                             ),
                           SizedBox(height: 20),
+                          // Experience field (asking in years as a number)
+                          TextField(
+                            controller: experienceController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "Experience (years)",
+                              labelStyle: TextStyle(color: Colors.white),
+                            ),
+                            style: TextStyle(color: Colors.white),
+                          ),
                           ElevatedButton(
                             onPressed: () {
                               isLogin ? login() : signUp();
@@ -458,6 +628,19 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                           ),
 
                           SizedBox(height: 10),  // Added spacing for better visual appearance
+                          // Display error message if any
+                          if (errorMessage.isNotEmpty)
+                            Text(
+                              errorMessage,
+                              style: TextStyle(color: Colors.red, fontSize: 16),
+                            ),
+
+                          // Display success message if any
+                          if (successMessage.isNotEmpty)
+                            Text(
+                              successMessage,
+                              style: TextStyle(color: Colors.green, fontSize: 16),
+                            ),
                         ],
                       ),
                     ),
