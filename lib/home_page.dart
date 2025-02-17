@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'dart:ui';
+import 'service_provider_list.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;
@@ -167,8 +168,11 @@ class _HomePageState extends State<HomePage> {
                               physics: NeverScrollableScrollPhysics(),
                               itemCount: services.length,
                               itemBuilder: (context, index) {
-                                var service = services[index].data() as Map<String, dynamic>;
-                                return ServiceCard(service: service);
+                                var serviceData = services[index].data() as Map<String, dynamic>;
+                                return ServiceCard(
+                                  service: serviceData,
+                                  docId: services[index].id,
+                                );
                               },
                             );
                           },
@@ -188,8 +192,10 @@ class _HomePageState extends State<HomePage> {
 
 class ServiceCard extends StatefulWidget {
   final Map<String, dynamic> service;
+  final String docId; // Firestore document id for this service
 
-  ServiceCard({required this.service});
+
+  ServiceCard({required this.service, required this.docId});
 
   @override
   _ServiceCardState createState() => _ServiceCardState();
@@ -307,7 +313,18 @@ class _ServiceCardState extends State<ServiceCard> {
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              // Navigate to booking page
+                              // When the Book button is pressed,
+                              // navigate to the ServiceProviderList page,
+                              // passing the service document id and icon URL.
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ServiceProviderList(
+                                    serviceCategoryDocId: widget.docId,
+                                    iconUrl: widget.service['icon'],
+                                  ),
+                                ),
+                              );
                             },
                             child: Text("Book"),
                             style: ElevatedButton.styleFrom(
