@@ -518,7 +518,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               labelText: "Password",
                               labelStyle: TextStyle(color: Colors.white),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white),
+                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white),
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -553,8 +553,8 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                             ),
 
                           // Show Location and Services Offered only for Service Provider
-                          if (role == "service_provider")
-                            Column(
+                          if (!isLogin && role == "service_provider")
+                              Column(
                               children: [
                                 currentLocation == null
                                     ? CircularProgressIndicator()  // Show loading while fetching location
@@ -597,19 +597,20 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                                     );
                                   },
                                 ),
+                                SizedBox(height: 20),
+                                // Experience field (asking in years as a number)
+                                TextField(
+                                  controller: experienceController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: "Experience (years)",
+                                    labelStyle: TextStyle(color: Colors.white),
+                                  ),
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ],
                             ),
                           SizedBox(height: 20),
-                          // Experience field (asking in years as a number)
-                          TextField(
-                            controller: experienceController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: "Experience (years)",
-                              labelStyle: TextStyle(color: Colors.white),
-                            ),
-                            style: TextStyle(color: Colors.white),
-                          ),
                           ElevatedButton(
                             onPressed: () {
                               isLogin ? login() : signUp();
