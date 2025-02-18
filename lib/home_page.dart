@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'service_provider_list.dart';
+import 'theme.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;
@@ -206,65 +207,66 @@ class _ServiceCardState extends State<ServiceCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      color: Colors.grey.shade300.withOpacity(0.5),
-      margin: EdgeInsets.symmetric(vertical: 10),
-      child: Padding(
-        padding: EdgeInsets.all(10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: NetworkImage(widget.service['icon']),
-                  fit: BoxFit.cover,
+    return Theme(
+      data: ThemeData(cardTheme: AppTheme.cardTheme()),
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: NetworkImage(widget.service['icon']),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.service['serviceCategory'],
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(1.5, 1.5),
-                          blurRadius: 5.0,
-                          color: Colors.black.withOpacity(0.7),
-                        ),
-                      ],
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.service['serviceCategory'],
+                      /*style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1.5, 1.5),
+                            blurRadius: 5.0,
+                            color: Colors.black.withOpacity(0.7),
+                          ),
+                        ],
+                      ),*/
+                      style: AppTheme.cardTitleTextStyle(),
                     ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    widget.service['description'],
-                    style: TextStyle(
-                      fontSize: 14, color: Colors.grey[300],
-                      shadows: [
-                        Shadow(
-                          offset: Offset(1.5, 1.5),
-                          blurRadius: 7.0,
-                          color: Colors.black,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isExpanded) ...[
                     SizedBox(height: 5),
                     Text(
-                      widget.service['fullDescription'],
-                      style: TextStyle(
+                      widget.service['description'],
+                      /*style: TextStyle(
+                        fontSize: 14, color: Colors.grey[300],
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1.5, 1.5),
+                            blurRadius: 7.0,
+                            color: Colors.black,
+                          ),
+                        ],
+                      ),*/
+                      style: AppTheme.cardDescriptionTextStyle(),
+                    ),
+                    if (isExpanded) ...[
+                      SizedBox(height: 5),
+                      Text(
+                        widget.service['fullDescription'],
+                        /*style: TextStyle(
                           fontSize: 14, color: Colors.grey[350],
                           shadows: [
                             Shadow(
@@ -273,72 +275,77 @@ class _ServiceCardState extends State<ServiceCard> {
                               color: Colors.black,
                             ),
                           ],
+                        ),*/
+                        style: AppTheme.fullDescriptionTextStyle(),
                       ),
-                    ),
-                  ],
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "₹${widget.service['priceRange']}",
-                        style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0.1, 0.1),
-                              blurRadius: 9.0,
-                              color: Colors.black.withOpacity(0.7),
+                    ],
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "₹${widget.service['priceRange']}",
+                          /*style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0.1, 0.1),
+                                blurRadius: 9.0,
+                                color: Colors.black.withOpacity(0.7),
+                              ),
+                            ],
+                          ),*/
+                          style: AppTheme.priceRangeTextStyle(),
+                        ),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  isExpanded = !isExpanded;
+                                });
+                              },
+
+                              child: Text(isExpanded ? "Less" : "More", style: TextStyle(
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0.1, 0.1),
+                                    blurRadius: 3.0,
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                ],
+                              ),),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                // When the Book button is pressed,
+                                // navigate to the ServiceProviderList page,
+                                // passing the service document id and icon URL.
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ServiceProviderList(
+                                      serviceCategoryDocId: widget.docId,
+                                      iconUrl: widget.service['icon'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: AppTheme.cardButtonStyle(),
+                              child: Text("Book"),
+                              /*style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFFF8CB20)
+                              ),*/
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                isExpanded = !isExpanded;
-                              });
-                            },
-                            child: Text(isExpanded ? "Less" : "More", style: TextStyle(
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(0.1, 0.1),
-                                  blurRadius: 3.0,
-                                  color: Colors.white.withOpacity(0.7),
-                                ),
-                              ],
-                            ),),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              // When the Book button is pressed,
-                              // navigate to the ServiceProviderList page,
-                              // passing the service document id and icon URL.
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ServiceProviderList(
-                                    serviceCategoryDocId: widget.docId,
-                                    iconUrl: widget.service['icon'],
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Text("Book"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFF8CB20)
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
