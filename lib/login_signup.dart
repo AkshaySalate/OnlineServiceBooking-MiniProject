@@ -549,16 +549,16 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                                   }
                                 });
                               },
-                              dropdownColor: Colors.red.shade800.withOpacity(0.6),
+                              dropdownColor: Colors.grey.shade800,
                             ),
 
                           // Show Location and Services Offered only for Service Provider
                           if (!isLogin && role == "service_provider")
                               Column(
                               children: [
-                                currentLocation == null
-                                    ? CircularProgressIndicator()  // Show loading while fetching location
-                                    : Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
+                                //currentLocation == null
+                                    //? CircularProgressIndicator()  // Show loading while fetching location
+                                    //: Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
                                 SizedBox(height: 10),
                                 // Service Category dropdown fetched from Firestore
                                 FutureBuilder<QuerySnapshot>(
