@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:online_service_booking/user/shared_footer.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'service_provider_list.dart';
-import 'theme.dart';
+import '../theme.dart';
+import 'shared_footer.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;
@@ -187,6 +189,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+      bottomNavigationBar: SharedFooter(customerId: widget.customerId), // Add footer here
     );
   }
 }

@@ -3,9 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';  // For getting location
 import 'package:permission_handler/permission_handler.dart';
-import 'home_page.dart';
+import 'user/home_page.dart';
 import 'package:online_service_booking/provider/home_page.dart';
 import 'dart:math';
+import 'theme.dart';
 
 class LoginSignupPage extends StatefulWidget {
   @override
@@ -22,10 +23,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController servicesController = TextEditingController();  // For service providers
   final TextEditingController experienceController = TextEditingController();
+  final TextEditingController dobController = TextEditingController();
 
   String role = "customer"; // Default role selection
   String? selectedServiceCategoryId;
   Position? currentLocation;
+  String? gender;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -174,6 +177,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           print("⚠️ No location obtained! Defaulting to 0,0.");
         }
       }
+      if (role == "customer") {
+        print("Checking location permission before sign-up...");
+        await getCurrentLocation();
+        if (currentLocation == null) {
+          print("⚠️ No location obtained! Defaulting to 0,0.");
+        }
+      }
       //attempt to create user
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -220,7 +230,10 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           "role": role, // Ensures role is stored
           "location": currentLocation != null
               ? GeoPoint(currentLocation!.latitude, currentLocation!.longitude)
-              : GeoPoint(0.0, 0.0)
+              : GeoPoint(0.0, 0.0),
+          "dob": role == "customer" ? dobController.text : null,
+          "iconUrl": "https://cdn-icons-png.flaticon.com/512/7880/7880189.png",
+          "gender": role == "customer" && gender != null ? gender : "Not specified",
         });
       }
 
@@ -270,9 +283,6 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     }
   }
 
-
-
-
   @override
   void initState() {
     super.initState();
@@ -282,186 +292,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
     }
   }
 
-  // List of icons to choose from
-  final List<IconData> iconList = [
-    Icons.local_florist,
-    Icons.eco,
-    Icons.ac_unit,
-    Icons.local_florist_sharp,
-    //Icons.star,
-    //Icons.favorite,
-    //Icons.cloud,
-  ];
-
-
-  // Generates a random Positioned icon
-  Positioned randomIcon(double screenWidth, double screenHeight) {
-    double left = random.nextDouble() * (screenWidth - 50); // Random left within bounds
-    double top = random.nextDouble() * (screenHeight - 50); // Random top within bounds
-    double size = 20 + random.nextDouble() * 40; // Size between 20 and 60
-    IconData icon = iconList[random.nextInt(iconList.length)]; // Random icon
-
-    return Positioned(
-      left: left,
-      top: top,
-      child: Icon(icon, color: Colors.red.shade200, size: size),
-    );
-  }
-
-  // Generates icons in a structured yet dynamic layout
-  // Generates randomly scattered icons across the screen
-  List<Widget> generateScatteredIcons(double screenWidth, double screenHeight) {
-    List<Widget> iconWidgets = [];
-    int iconCount = 12; // Adjusted for a well-spread layout
-
-    for (int i = 0; i < iconCount; i++) {
-      double left = random.nextDouble() * screenWidth;
-      double top = random.nextDouble() * screenHeight;
-
-      double iconSize = 30 + random.nextDouble() * 60; // Sizes between 30-70
-      IconData icon = iconList[random.nextInt(iconList.length)];
-
-      iconWidgets.add(
-        Positioned(
-          left: left.clamp(0, screenWidth - iconSize),
-          top: top.clamp(0, screenHeight - iconSize),
-          child: Icon(icon, color: Colors.red.shade200, size: iconSize),
-        ),
-      );
-    }
-
-    return iconWidgets;
-  }
-
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    List<Widget> generateIcons() {
-      return [
-        Positioned(
-          top: screenHeight * 0.05,
-          left: screenWidth * 0.08,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.17),
-        ),
-        Positioned(
-          top: screenHeight * 0.10,
-          right: screenWidth * 0.12,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.10),
-        ),
-        Positioned(
-          top: screenHeight * 0.22,
-          left: screenWidth * 0.25,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
-        ),
-        Positioned(
-          top: screenHeight * 0.25,
-          right: screenWidth * 0.15,
-          child: Icon(Icons.local_florist_sharp, color: Colors.red.shade200, size: screenWidth * 0.19),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.12,
-          left: screenWidth * 0.35,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.20),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.12,
-          right: screenWidth * 0.10,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.25,
-          left: screenWidth * 0.05,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.07),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.27,
-          right: screenWidth * 0.10,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.2),
-        ),
-        Positioned(
-          top: screenHeight * 0.40,
-          left: screenWidth * 0.50,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.09),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.40,
-          left: screenWidth * 0.150,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.25),
-        ),
-      ];
-    }
-
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 0.5,
-            colors: [
-              Colors.red.shade300,
-              Colors.red.shade500,
-              Colors.red.shade700,
-              Colors.red.shade900,
-            ],
-            stops: [0.01, 0.4, 0.7, 1.0],
-          ),
-        ),
         child: Stack(
           children: [
-            /*
-            // Randomly positioned icons with different sizes
-            Positioned(
-              top: 50,
-              left: 30,
-              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1).toDouble()),
-            ),
-            Positioned(
-              top: 150,
-              right: 30,
-              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 2).toDouble()),
-            ),
-            Positioned(
-              bottom: 100,
-              left: 80,
-              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
-            ),
-            Positioned(
-              bottom: 180,
-              right: 80,
-              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 0.8).toDouble()),
-            ),
-            Positioned(
-              top: 100,
-              left: 150,
-              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.2).toDouble()),
-            ),
-            Positioned(
-              top: 200,
-              left: 200,
-              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 1.5).toDouble()),
-            ),
-            Positioned(
-              bottom: 50,
-              right: 150,
-              child: Icon(Icons.local_florist, color: Colors.red.shade200, size: 20 + (30 * 1.1).toDouble()),
-            ),
-            Positioned(
-              top: 250,
-              left: 250,
-              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 0.9).toDouble()),
-            ),
-            Positioned(
-              bottom: 250,
-              right: 250,
-              child: Icon(Icons.eco, color: Colors.red.shade200, size: 20 + (30 * 1.3).toDouble()),
-            ),*/
-
-            // Generate 10 random icons
-            //...List.generate(20, (_) => randomIcon(screenWidth, screenHeight,)),
-            // Generate a grid of icons
-            //...generateScatteredIcons(screenWidth, screenHeight),
-            ...generateIcons(),
             Center(
               child: SingleChildScrollView(
                 child: Column(
@@ -550,6 +386,51 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                                 });
                               },
                               dropdownColor: Colors.grey.shade800,
+                            ),
+
+                          if (!isLogin && role == "customer")
+                            Column(
+                              children: [
+                                SizedBox(height: 10),
+                                DropdownButton<String>(
+                                  value: gender, // Ensure gender is set correctly
+                                  hint: Text("Select Gender", style: TextStyle(color: Colors.white)),
+                                  items: [
+                                    DropdownMenuItem(value: "Male", child: Text("Male", style: TextStyle(color: Colors.white))),
+                                    DropdownMenuItem(value: "Female", child: Text("Female", style: TextStyle(color: Colors.white))),
+                                  ],
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      gender = newValue; // Update gender selection
+                                    });
+                                  },
+                                  dropdownColor: Colors.grey.shade800,
+                                ),
+                                SizedBox(height: 10),
+                                TextField(
+                                  controller: dobController,
+                                  readOnly: true,
+                                  onTap: () async {
+                                    DateTime? pickedDate = await showDatePicker(
+                                      context: context,
+                                      initialDate: DateTime.now(),
+                                      firstDate: DateTime(1900),
+                                      lastDate: DateTime.now(),
+                                    );
+                                    if (pickedDate != null) {
+                                      setState(() {
+                                        dobController.text = "${pickedDate.year}-${pickedDate.month}-${pickedDate.day}";
+                                      });
+                                    }
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: "Date of Birth",
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    suffixIcon: Icon(Icons.calendar_today, color: Colors.white),
+                                  ),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
 
                           // Show Location and Services Offered only for Service Provider
