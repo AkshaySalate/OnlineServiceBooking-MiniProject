@@ -464,218 +464,200 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
             ...generateIcons(),
             Center(
               child: SingleChildScrollView(
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 500),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    // This tween will animate from π (180°) to 0 radians.
-                    final flipAnimation = Tween(begin: pi, end: 0.0).animate(animation);
-                    return AnimatedBuilder(
-                      animation: flipAnimation,
-                      child: child,
-                      builder: (context, child) {
-                        return Transform(
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001) // This perspective value makes the 3D effect more pronounced.
-                            ..rotateY(flipAnimation.value),
-                          alignment: Alignment.center,
-                          child: child,
-                        );
-                      },
-                    );
-                  },
-                  child: Container(
-                    // The key forces the AnimatedSwitcher to recognize changes between login and signup forms.
-                    key: ValueKey<bool>(isLogin),
-                    padding: EdgeInsets.all(20),
-                    width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
-                    constraints: BoxConstraints(maxWidth: 400), // Ensures it's not too wide on larger screens
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300.withOpacity(0.2), // Container background color
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5), // Soft white border
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          spreadRadius: 3,
-                          offset: Offset(3, 3), // 3D depth effect
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                        SizedBox(height: 20),
-                        // Show Name & Phone field only for Sign-Up
-                        if (!isLogin)
-                          Column(
-                            children: [
-                              TextField(
-                                controller: nameController,
-                                decoration: InputDecoration(labelText: "Business Name", labelStyle: TextStyle(color: Colors.white)),
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              TextField(
-                                controller: phoneController,
-                                decoration: InputDecoration(labelText: "Phone", labelStyle: TextStyle(color: Colors.white)),
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+                      constraints: BoxConstraints(maxWidth: 400), // Ensures it's not too wide on larger screens
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300.withOpacity(0.2), // Container background color
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.5), // Soft white border
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            spreadRadius: 3,
+                            offset: Offset(3, 3), // 3D depth effect
                           ),
-                        TextField(
-                          controller: emailController,
-                          decoration: InputDecoration(labelText: "Email", labelStyle: TextStyle(color: Colors.white)),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        TextField(
-                          controller: passwordController,
-                          decoration: InputDecoration(
-                            labelText: "Password",
-                            labelStyle: TextStyle(color: Colors.white),
-                            suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                        ],
+                      ),
+
+                      child: Column(
+                        children: [
+                          Text(isLogin ? "Login" : "Sign Up", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                          SizedBox(height: 20),
+
+                          // Show Name & Phone field only for Sign-Up
+                          if (!isLogin)
+                            Column(
+                              children: [
+                                TextField(
+                                  controller: nameController,
+                                  decoration: InputDecoration(labelText: "Business Name", labelStyle: TextStyle(color: Colors.white)),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                TextField(
+                                  controller: phoneController,
+                                  decoration: InputDecoration(labelText: "Phone", labelStyle: TextStyle(color: Colors.white)),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
-                          ),
-                          obscureText: _obscurePassword,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        // Show Role Selection for Sign-Up
-                        if (!isLogin)
-                          DropdownButton<String>(
-                            value: role,
-                            items: ["customer", "service_provider"].map((role) {
-                              return DropdownMenuItem(value: role, child: Text(role, style: TextStyle(color: Colors.white)));
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                role = value!;
-                                // Reset the selected service category if role changes.
-                                if (role != "service_provider") {
-                                  selectedServiceCategoryId = null;
-                                } else {
-                                  // Optionally, fetch location when service provider is chosen.
-                                  getCurrentLocation();
-                                }
-                              });
-                            },
-                            dropdownColor: Colors.grey.shade800,
-                          ),
 
-                        // Show Location and Services Offered only for Service Provider
-                        if (!isLogin && role == "service_provider")
-                          Column(
-                            children: [
-                              //currentLocation == null
-                              //? CircularProgressIndicator()  // Show loading while fetching location
-                              //: Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
-                              //SizedBox(height: 10),
-                              // Service Category dropdown fetched from Firestore
-                              FutureBuilder<QuerySnapshot>(
-                                future: _firestore.collection("services").get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return CircularProgressIndicator();
-                                  }
-                                  if (snapshot.hasError) {
-                                    return Text("Error: ${snapshot.error}", style: TextStyle(color: Colors.white));
-                                  }
-                                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                                    return Text("No service categories available", style: TextStyle(color: Colors.white));
-                                  }
-                                  List<DropdownMenuItem<String>> categoryItems = snapshot.data!.docs.map((doc) {
-                                    // Assuming each document has a field "name" for display purposes.
-                                    String categoryName = doc.data().toString().contains("serviceCategory")
-                                        ? doc.get("serviceCategory")
-                                        : doc.id;
-                                    return DropdownMenuItem<String>(
-                                      value: doc.id,
-                                      child: Text(categoryName, style: TextStyle(color: Colors.white)),
-                                    );
-                                  }).toList();
-
-                                  return DropdownButton<String>(
-                                    value: selectedServiceCategoryId,
-                                    hint: Text("Select Service", style: TextStyle(color: Colors.white)),
-                                    items: categoryItems,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        selectedServiceCategoryId = value;
-                                      });
-                                    },
-                                    dropdownColor: Colors.grey.shade800,
-                                  );
+                          TextField(
+                            controller: emailController,
+                            decoration: InputDecoration(labelText: "Email", labelStyle: TextStyle(color: Colors.white)),
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          TextField(
+                            controller: passwordController,
+                            decoration: InputDecoration(
+                              labelText: "Password",
+                              labelStyle: TextStyle(color: Colors.white),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
                                 },
                               ),
-                              SizedBox(height: 20),
-                              // Experience field (asking in years as a number)
-                              TextField(
-                                controller: experienceController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  labelText: "Experience (years)",
-                                  labelStyle: TextStyle(color: Colors.white),
-                                ),
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () {
-                            isLogin ? login() : signUp();
-                          },
-                          child: Text(
-                            isLogin ? "Login" : "Sign Up",
-                            style: TextStyle(color: Colors.black), // Text color set to white
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFF8CB20),
-                            minimumSize: Size(MediaQuery.of(context).size.width * 0.6, 45),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20), // Reduced corner radius
                             ),
-                          ),
-                        ),
-                        SizedBox(height: 10),  // Added spacing for better visual appearance
-                        // Display error message if any
-                        if (errorMessage.isNotEmpty)
-                          Text(
-                            errorMessage,
-                            style: TextStyle(color: Colors.red, fontSize: 16),
+                            obscureText: _obscurePassword,
+                            style: TextStyle(color: Colors.white),
                           ),
 
-                        // Display success message if any
-                        if (successMessage.isNotEmpty)
-                          Text(
-                            successMessage,
-                            style: TextStyle(color: Colors.green, fontSize: 16),
+                          // Show Role Selection for Sign-Up
+                          if (!isLogin)
+                            DropdownButton<String>(
+                              value: role,
+                              items: ["customer", "service_provider"].map((role) {
+                                return DropdownMenuItem(value: role, child: Text(role, style: TextStyle(color: Colors.white)));
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  role = value!;
+                                  // Reset the selected service category if role changes.
+                                  if (role != "service_provider") {
+                                    selectedServiceCategoryId = null;
+                                  } else {
+                                    // Optionally, fetch location when service provider is chosen.
+                                    getCurrentLocation();
+                                  }
+                                });
+                              },
+                              dropdownColor: Colors.grey.shade800,
+                            ),
+
+                          // Show Location and Services Offered only for Service Provider
+                          if (!isLogin && role == "service_provider")
+                              Column(
+                              children: [
+                                //currentLocation == null
+                                    //? CircularProgressIndicator()  // Show loading while fetching location
+                                    //: Text("Location: Latitude ${currentLocation?.latitude}, Longitude ${currentLocation?.longitude}", style: TextStyle(color: Colors.white)),
+                                SizedBox(height: 10),
+                                // Service Category dropdown fetched from Firestore
+                                FutureBuilder<QuerySnapshot>(
+                                  future: _firestore.collection("services").get(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return CircularProgressIndicator();
+                                    }
+                                    if (snapshot.hasError) {
+                                      return Text("Error: ${snapshot.error}", style: TextStyle(color: Colors.white));
+                                    }
+                                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                      return Text("No service categories available", style: TextStyle(color: Colors.white));
+                                    }
+                                    List<DropdownMenuItem<String>> categoryItems = snapshot.data!.docs.map((doc) {
+                                      // Assuming each document has a field "name" for display purposes.
+                                      String categoryName = doc.data().toString().contains("serviceCategory")
+                                          ? doc.get("serviceCategory")
+                                          : doc.id;
+                                      return DropdownMenuItem<String>(
+                                        value: doc.id,
+                                        child: Text(categoryName, style: TextStyle(color: Colors.white)),
+                                      );
+                                    }).toList();
+
+                                    return DropdownButton<String>(
+                                      value: selectedServiceCategoryId,
+                                      hint: Text("Select Service", style: TextStyle(color: Colors.white)),
+                                      items: categoryItems,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedServiceCategoryId = value;
+                                        });
+                                      },
+                                      dropdownColor: Colors.grey.shade800,
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: 20),
+                                // Experience field (asking in years as a number)
+                                TextField(
+                                  controller: experienceController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: "Experience (years)",
+                                    labelStyle: TextStyle(color: Colors.white),
+                                  ),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () {
+                              isLogin ? login() : signUp();
+                            },
+                            child: Text(
+                              isLogin ? "Login" : "Sign Up",
+                              style: TextStyle(color: Colors.black), // Text color set to white
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF8CB20),
+                              minimumSize: Size(MediaQuery.of(context).size.width * 0.6, 45),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20), // Reduced corner radius
+                              ),
+                            ),
                           ),
-                      ],
+
+                          SizedBox(height: 10),  // Added spacing for better visual appearance
+                          // Display error message if any
+                          if (errorMessage.isNotEmpty)
+                            Text(
+                              errorMessage,
+                              style: TextStyle(color: Colors.red, fontSize: 16),
+                            ),
+
+                          // Display success message if any
+                          if (successMessage.isNotEmpty)
+                            Text(
+                              successMessage,
+                              style: TextStyle(color: Colors.green, fontSize: 16),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      isLogin = !isLogin;
-                    });
-                  },
-                  child: Text(
-                    isLogin ? "Create an account" : "Already have an account? Login",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
+                    // "Create an account" / "Already have an account?" button outside of the container
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          isLogin = !isLogin;
+                        });
+                      },
+                      child: Text(
+                        isLogin ? "Create an account" : "Already have an account? Login",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
