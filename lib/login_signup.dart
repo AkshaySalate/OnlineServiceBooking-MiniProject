@@ -298,6 +298,13 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       body: Container(
         child: Stack(
           children: [
+            // Gradient Background
+            Container(
+              decoration: AppTheme.gradientBackground,
+            ),
+
+            // Floating Icons
+            ...AppTheme.floatingIcons(context),
             Center(
               child: SingleChildScrollView(
                 child: Column(
