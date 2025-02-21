@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:online_service_booking/provider//shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
+import 'package:online_service_booking/chat_screen.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;
@@ -289,18 +290,29 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(Icons.phone, color: Colors.green),
+              icon: Icon(Icons.phone, color: Colors.red),
               onPressed: () => _callCustomer(booking['customerPhone']),
             ),
             IconButton(
               icon: Icon(Icons.chat, color: Colors.blue),
-              onPressed: () {}, // Add Chat Functionality Later
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      providerId: widget.providerId,
+                      customerId: booking['customerId'],
+                    ),
+                  ),
+                );
+              }, // Add Chat Functionality Later
             ),
           ],
         ),
       ),
     );
   }
+
 
   /// **📌 Booking Action Button**
   Widget _bookingActionButton(String status) {
