@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'profile_page.dart';
+import 'package:online_service_booking/provider/home_page.dart';
+import 'package:online_service_booking/provider/profile_page.dart';
 
 class SharedFooter extends StatelessWidget {
-  final String customerId;
+  final String providerId;
   final int currentIndex;
 
-  const SharedFooter({super.key, required this.customerId, required this.currentIndex});
+  const SharedFooter({super.key, required this.providerId, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(customerId: customerId),
+              builder: (context) => ServiceProviderHomePage(providerId: providerId),
             ),
           );
         }
@@ -48,7 +48,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ProfilePage(customerId: customerId),
+              builder: (context) => ServiceProviderProfile(providerId: providerId),
             ),
           );
         }

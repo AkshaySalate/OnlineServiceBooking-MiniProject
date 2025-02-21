@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_profile_page.dart';
 import 'shared_footer.dart';
-import '../theme.dart';
+import 'package:online_service_booking/theme.dart';
+import 'package:online_service_booking/login_signup.dart';
 
 class ProfilePage extends StatelessWidget {
   final String customerId;
@@ -75,8 +76,14 @@ class ProfilePage extends StatelessWidget {
                         // Logout Button
                         ElevatedButton.icon(
                           onPressed: () async {
-                            await FirebaseAuth.instance.signOut();
-                            Navigator.pushReplacementNamed(context, '/login');
+                            //await FirebaseAuth.instance.signOut();
+                            //Navigator.pushReplacementNamed(context, '/Login');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LoginSignupPage(),
+                              ),
+                            );
                           },
                           icon: Icon(Icons.logout, color: Colors.white),
                           label: Text("Logout", style: TextStyle(color: Colors.white)),
@@ -94,7 +101,7 @@ class ProfilePage extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: SharedFooter(customerId: customerId),
+      bottomNavigationBar: SharedFooter(customerId: customerId, currentIndex: 1),
     );
   }
 }

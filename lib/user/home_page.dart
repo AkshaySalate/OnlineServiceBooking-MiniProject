@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: SharedFooter(customerId: widget.customerId), // Add footer here
+      bottomNavigationBar: SharedFooter(customerId: widget.customerId, currentIndex: 0,), // Add footer here
     );
   }
 }
