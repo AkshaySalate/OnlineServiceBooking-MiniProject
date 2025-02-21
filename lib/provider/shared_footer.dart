@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:online_service_booking/provider/home_page.dart';
 import 'package:online_service_booking/provider/profile_page.dart';
+import 'package:online_service_booking/provider/bookings_page.dart';
 
 class SharedFooter extends StatelessWidget {
   final String providerId;
@@ -49,6 +50,14 @@ class SharedFooter extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => ServiceProviderProfile(providerId: providerId),
+            ),
+          );
+        }
+        if (index == 2) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProviderBookingsPage(providerId: providerId),
             ),
           );
         }

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:online_service_booking/provider//shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
 import 'package:online_service_booking/chat_screen.dart';
+import 'bookings_page.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;
@@ -33,6 +34,31 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     _listenForUpdates();
   }
 
+  Future<void> acceptBooking(String bookingId, String customerId) async {
+    await FirebaseFirestore.instance.collection("bookings").doc(bookingId).update({
+      'status': 'Upcoming',
+    });
+
+    // 🔹 Add notification for the provider
+    await FirebaseFirestore.instance.collection("notifications").add({
+      "providerId": widget.providerId,
+      "message": "You have accepted a new booking.",
+      "timestamp": FieldValue.serverTimestamp(),
+      "read": false,
+    });
+
+    // 🔹 Add notification for the customer
+    await FirebaseFirestore.instance.collection("notifications").add({
+      "customerId": customerId,
+      "message": "Your booking has been accepted.",
+      "timestamp": FieldValue.serverTimestamp(),
+      "read": false,
+    });
+
+    setState(() {});
+  }
+
+
   /// Load Service Provider Data from Firestore
   Future<void> _loadServiceProviderData() async {
     try {
@@ -49,89 +75,154 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
         });
       }
 
-      // Fetch Booking & Earnings Data
+      // ✅ Fetch Bookings
       QuerySnapshot bookingSnapshot = await FirebaseFirestore.instance
           .collection("bookings")
-          .where("providerId", isEqualTo: widget.providerId)
+          .where("providerID", isEqualTo: widget.providerId)
           .get();
 
-      if (bookingSnapshot.docs.isNotEmpty) {
-        totalBookings = bookingSnapshot.docs.length;
-        upcomingBookings = bookingSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      List<Map<String, dynamic>> fetchedBookings = [];
+      double earnings = 0.0;
+      double ratingSum = 0.0;
+      int ratingCount = 0;
 
-        double earnings = 0.0;
-        double ratingSum = 0.0;
-        int ratingCount = 0;
+      for (var doc in bookingSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        data["id"] = doc.id; // Store document ID
 
-        for (var doc in bookingSnapshot.docs) {
-          var data = doc.data() as Map<String, dynamic>;
-          if (data.containsKey("amount")) earnings += data["amount"];
-          if (data.containsKey("rating")) {
-            ratingSum += data["rating"];
-            ratingCount++;
-          }
-
-          if (data["status"] == "Upcoming") {
-            upcomingBookings.add(data);
-          }
+        if (data.containsKey("amount")) earnings += data["amount"];
+        if (data.containsKey("rating")) {
+          ratingSum += data["rating"];
+          ratingCount++;
         }
 
-        totalEarnings = earnings;
-        avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0.0;
+        // ✅ Only include "Upcoming" bookings
+        if (data["status"] == "Upcoming") {
+          fetchedBookings.add(data);
+        }
       }
-      // Fetch Payment History
+
+      // ✅ Fetch Payment History
       QuerySnapshot paymentsSnapshot = await FirebaseFirestore.instance
           .collection("payments")
           .where("providerId", isEqualTo: widget.providerId)
           .orderBy("date", descending: true)
           .get();
 
-      paymentHistory = paymentsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      List<Map<String, dynamic>> fetchedPayments = paymentsSnapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
 
-      // Fetch notifications
+      // ✅ Fetch Notifications
       QuerySnapshot notificationSnapshot = await FirebaseFirestore.instance
           .collection("notifications")
           .where("providerId", isEqualTo: widget.providerId)
           .orderBy("timestamp", descending: true)
           .get();
 
-      notifications = notificationSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
-      unreadNotifications = notifications.where((n) => !(n['read'] ?? false)).length;
+      List<Map<String, dynamic>> fetchedNotifications = notificationSnapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+
+      setState(() {
+        totalBookings = bookingSnapshot.docs.length;
+        upcomingBookings = fetchedBookings;
+        totalEarnings = earnings;
+        avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0.0;
+        paymentHistory = fetchedPayments;
+        notifications = fetchedNotifications;
+        unreadNotifications = fetchedNotifications.where((n) => !(n['read'] ?? false)).length;
+        _isLoading = false;
+      });
+
     } catch (e) {
       print("⚠️ Error loading data: $e");
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
+
 
   /// **2️⃣ Listen for Real-time Updates**
   void _listenForUpdates() {
     FirebaseFirestore.instance
         .collection("notifications")
-        .where("providerId", isEqualTo: widget.providerId)
+        .where("providerID", isEqualTo: widget.providerId)  // Ensure correct field name
+        .orderBy("timestamp", descending: true)
         .snapshots()
         .listen((snapshot) {
+      List<Map<String, dynamic>> updatedNotifications = snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        data["id"] = doc.id;  // Store document ID for updating
+        return data;
+      }).toList();
+
       setState(() {
-        notifications = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
-        unreadNotifications = notifications.where((n) => !(n['read'] ?? false)).length;
+        notifications = updatedNotifications;
+        unreadNotifications = updatedNotifications.where((n) => !(n['read'] ?? false)).length;
       });
+
+      if (unreadNotifications > 0) {
+        _showNewBookingAlert();
+      }
     });
   }
 
+
+  void _showNewBookingAlert() {
+    if (notifications.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("New Booking Request!"),
+        content: Text("You have a new booking. Please check your bookings."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _markNotificationsAsRead();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProviderBookingsPage(providerId: widget.providerId),
+                ),
+              );
+            },
+            child: Text("View Bookings"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Dismiss"),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
   /// **4️⃣ Mark Notifications as Read**
   Future<void> _markNotificationsAsRead() async {
-    for (var notification in notifications) {
-      await FirebaseFirestore.instance
-          .collection("notifications")
-          .doc(notification["id"])
-          .update({"read": true});
+    List<String> notificationIds = notifications
+        .where((n) => !(n['read'] ?? false))
+        .map((n) => n["id"].toString())
+        .toList();
+
+    if (notificationIds.isEmpty) return;
+
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+    for (String id in notificationIds) {
+      batch.update(FirebaseFirestore.instance.collection("notifications").doc(id), {"read": true});
     }
+    await batch.commit();
+
     setState(() {
       unreadNotifications = 0;
+      notifications.forEach((n) => n["read"] = true);
     });
   }
+
 
   /// Toggle Availability Status
   Future<void> _toggleAvailability(bool newValue) async {
@@ -228,17 +319,35 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
                 SizedBox(height: 20),
 
                 /// **4️⃣ Active Bookings**
-                Text("Upcoming Bookings", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 10),
-                upcomingBookings.isEmpty
-                    ? Text("No upcoming bookings.", style: TextStyle(color: Colors.white))
-                    : Expanded(
-                  child: ListView.builder(
-                    itemCount: upcomingBookings.length,
-                    itemBuilder: (context, index) {
-                      var booking = upcomingBookings[index];
-                      return _bookingCard(booking);
-                    },
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProviderBookingsPage(providerId: widget.providerId),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Upcoming Bookings",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 10),
+                      upcomingBookings.isEmpty
+                          ? Text("No upcoming bookings.", style: TextStyle(color: Colors.white))
+                          : Expanded(
+                        child: ListView.builder(
+                          itemCount: upcomingBookings.length,
+                          itemBuilder: (context, index) {
+                            var booking = upcomingBookings[index];
+                            return _bookingCard(booking);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 

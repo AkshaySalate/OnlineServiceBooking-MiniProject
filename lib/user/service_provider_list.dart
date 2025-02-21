@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../theme.dart';
+import 'package:online_service_booking/theme.dart';
+import 'booking_confirmation_page.dart';
 
 class ServiceProviderList extends StatefulWidget {
   final String serviceCategoryDocId;
@@ -18,11 +20,54 @@ class ServiceProviderList extends StatefulWidget {
 
 class _ServiceProviderListState extends State<ServiceProviderList> {
   String? selectedProviderId;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void selectProvider(String providerId) {
     setState(() {
       selectedProviderId = selectedProviderId == providerId ? null : providerId;
     });
+  }
+
+  Future<void> placeBooking() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("You need to log in first.")));
+        return;
+      }
+
+      String customerId = user.uid; // Current logged-in user
+      String bookingId = FirebaseFirestore.instance.collection("bookings").doc().id; // Auto-generated ID
+
+      await FirebaseFirestore.instance.collection("bookings").doc(bookingId).set({
+        "bookingID": bookingId,
+        "customerID": customerId,
+        "providerID": selectedProviderId,
+        "serviceCategory": widget.serviceCategoryDocId,
+        "eventDate": DateTime.now().toIso8601String(), // Placeholder event date
+        "status": "pending",
+      });
+
+      // ✅ Add Notification for the Service Provider
+      await FirebaseFirestore.instance.collection("notifications").add({
+        "providerID": selectedProviderId,
+        "message": "You have a new booking request!",
+        "timestamp": FieldValue.serverTimestamp(),
+        "read": false,
+      });
+
+      // Navigate to booking confirmation page
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookingConfirmationPage(bookingId: bookingId),
+        ),
+      );
+
+    } catch (e) {
+      print("Error placing booking: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to place booking.")));
+    }
   }
 
   @override
@@ -125,7 +170,7 @@ class _ServiceProviderListState extends State<ServiceProviderList> {
             },
           ),
 
-          // Confirm button (hidden initially, slides in when a provider is selected)
+          // Confirm Booking button (hidden initially, slides in when a provider is selected)
           AnimatedPositioned(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
@@ -133,9 +178,7 @@ class _ServiceProviderListState extends State<ServiceProviderList> {
             left: 20,
             right: 20,
             child: ElevatedButton(
-              onPressed: () {
-                // Future functionality for confirm booking
-              },
+              onPressed: placeBooking,
               child: Text("Confirm", style: theme.textTheme.titleLarge?.copyWith(color: Colors.black)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFF8CB20),
