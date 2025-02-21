@@ -54,6 +54,34 @@ class AppTheme {
     );
   }
 
+  /// **🌟 Gradient AppBar with Icon**
+  static PreferredSizeWidget gradientAppBarWithIcon(
+      String title, IconData icon, Color iconColor, VoidCallback onPressed) {
+    return AppBar(
+      title: Text(title, style: TextStyle(color: Colors.white)),
+      actions: [
+        IconButton(
+          icon: Icon(icon, color: iconColor),
+          onPressed: onPressed,
+        ),
+      ],
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.5,
+            colors: [
+              Colors.red.shade900,
+              Colors.red.shade900,
+              Colors.red.shade900,
+            ],
+            stops: [0.01, 0.4, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+
   // 🔴 Gradient Background
   static BoxDecoration get gradientBackground {
     return BoxDecoration(

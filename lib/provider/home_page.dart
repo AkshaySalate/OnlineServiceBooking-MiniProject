@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:online_service_booking/provider//shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
 
@@ -21,11 +22,14 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
   double avgRating = 0.0;
   List<Map<String, dynamic>> upcomingBookings = [];
   List<Map<String, dynamic>> paymentHistory = [];
+  List<Map<String, dynamic>> notifications = [];
+  int unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _loadServiceProviderData();
+    _listenForUpdates();
   }
 
   /// Load Service Provider Data from Firestore
@@ -52,6 +56,7 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
 
       if (bookingSnapshot.docs.isNotEmpty) {
         totalBookings = bookingSnapshot.docs.length;
+        upcomingBookings = bookingSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
         double earnings = 0.0;
         double ratingSum = 0.0;
@@ -81,12 +86,49 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
           .get();
 
       paymentHistory = paymentsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+      // Fetch notifications
+      QuerySnapshot notificationSnapshot = await FirebaseFirestore.instance
+          .collection("notifications")
+          .where("providerId", isEqualTo: widget.providerId)
+          .orderBy("timestamp", descending: true)
+          .get();
+
+      notifications = notificationSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      unreadNotifications = notifications.where((n) => !(n['read'] ?? false)).length;
     } catch (e) {
       print("⚠️ Error loading data: $e");
     }
 
     setState(() {
       _isLoading = false;
+    });
+  }
+
+  /// **2️⃣ Listen for Real-time Updates**
+  void _listenForUpdates() {
+    FirebaseFirestore.instance
+        .collection("notifications")
+        .where("providerId", isEqualTo: widget.providerId)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        notifications = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+        unreadNotifications = notifications.where((n) => !(n['read'] ?? false)).length;
+      });
+    });
+  }
+
+  /// **4️⃣ Mark Notifications as Read**
+  Future<void> _markNotificationsAsRead() async {
+    for (var notification in notifications) {
+      await FirebaseFirestore.instance
+          .collection("notifications")
+          .doc(notification["id"])
+          .update({"read": true});
+    }
+    setState(() {
+      unreadNotifications = 0;
     });
   }
 
@@ -105,7 +147,18 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTheme.gradientAppBar("Dashboard"),
+      appBar: AppTheme.gradientAppBarWithIcon(
+        "Dashboard",
+        Icons.notifications,
+        unreadNotifications > 0 ? Colors.orange : Colors.white,
+            () {
+          _markNotificationsAsRead();
+          showDialog(
+            context: context,
+            builder: (_) => _notificationDialog(),
+          );
+        },
+      ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Stack(
@@ -224,16 +277,27 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     );
   }
 
-  /// **📌 Booking Card Widget**
+  /// **📌 Booking Card**
   Widget _bookingCard(Map<String, dynamic> booking) {
     return Card(
       color: Colors.white.withOpacity(0.8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(Icons.calendar_today, color: Colors.blue),
-        title: Text("Customer: ${booking['customerName']}"),
-        subtitle: Text("Service: ${booking['serviceType']}\nDate: ${booking['date']}"),
-        trailing: _bookingActionButton(booking['status']),
+        title: Text("${booking['customerName']} - ${booking['serviceType']}"),
+        subtitle: Text("Date: ${booking['date']} | Time: ${booking['time']}"),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.phone, color: Colors.green),
+              onPressed: () => _callCustomer(booking['customerPhone']),
+            ),
+            IconButton(
+              icon: Icon(Icons.chat, color: Colors.blue),
+              onPressed: () {}, // Add Chat Functionality Later
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -287,6 +351,38 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
           Text(label, style: TextStyle(color: Colors.white)),
         ],
       ),
+    );
+  }
+  /// **📌 Call Customer**
+  void _callCustomer(String phoneNumber) async {
+    final Uri phoneUri = Uri.parse("tel:$phoneNumber");
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      print("Could not launch call.");
+    }
+  }
+
+  /// **📌 Notification Dialog**
+  Widget _notificationDialog() {
+    return AlertDialog(
+      title: Text("Notifications"),
+      content: notifications.isEmpty
+          ? Text("No new notifications.")
+          : Column(
+        mainAxisSize: MainAxisSize.min,
+        children: notifications.map((n) => ListTile(
+          leading: Icon(Icons.notifications, color: Colors.orange),
+          title: Text(n["message"]),
+          subtitle: Text(n["timestamp"].toDate().toString()),
+        )).toList(),
+      ),
+      actions: [
+        TextButton(
+          child: Text("Close"),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 }
