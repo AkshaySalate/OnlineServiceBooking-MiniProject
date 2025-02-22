@@ -88,7 +88,38 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
-        return "${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+        String address = "";
+
+        // Append house/building number if available
+        if (place.subThoroughfare != null && place.subThoroughfare!.isNotEmpty) {
+          address += "${place.subThoroughfare} ";
+        }
+        // Append street name if available
+        if (place.thoroughfare != null && place.thoroughfare!.isNotEmpty) {
+          address += "${place.thoroughfare}, ";
+        }
+        // Append neighborhood (subLocality) if available
+        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+          address += "${place.subLocality}, ";
+        }
+        // Append city (locality) if available
+        if (place.locality != null && place.locality!.isNotEmpty) {
+          address += "${place.locality}, ";
+        }
+        // Append state (administrativeArea) if available
+        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          address += "${place.administrativeArea}, ";
+        }
+        // Append postal code if available
+        if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+          address += "${place.postalCode}, ";
+        }
+        // Append country if available
+        if (place.country != null && place.country!.isNotEmpty) {
+          address += "${place.country}";
+        }
+
+        return address.trim().replaceAll(RegExp(r",\s*$"), "");
       }
     } catch (e) {
       print("⚠️ Error fetching address: $e");
