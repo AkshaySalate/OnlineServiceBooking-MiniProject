@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class EditProfilePage extends StatefulWidget {
+  @override
+  _EditProfilePageState createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController experienceController = TextEditingController();
+
+  String? role;
+  String? selectedServiceCategory;
+  List<String> serviceCategories = [
+    "Plumber",
+    "Electrician",
+    "Carpenter",
+    "Mechanic",
+    "Painter",
+    "Other"
+  ];
+
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserDetails();
+  }
+
+  Future<void> fetchUserDetails() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await _firestore.collection("users").doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        userDoc =
+            await _firestore.collection("service_providers").doc(user.uid).get();
+      }
+
+      if (userDoc.exists) {
+        setState(() {
+          nameController.text = userDoc["name"] ?? "";
+          emailController.text = userDoc["email"] ?? "";
+          phoneController.text = userDoc["phone"] ?? "";
+          role = userDoc["role"];
+
+          if (role == "service_provider") {
+            selectedServiceCategory = userDoc["serviceCategory"] ?? "";
+            experienceController.text = userDoc["experience"].toString() ?? "";
+          }
+        });
+      }
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> updateProfile() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String collection = role == "service_provider"
+          ? "service_providers"
+          : "users";
+
+      await _firestore.collection(collection).doc(user.uid).update({
+        "name": nameController.text.trim(),
+        "phone": phoneController.text.trim(),
+        if (role == "service_provider") "serviceCategory": selectedServiceCategory,
+        if (role == "service_provider")
+          "experience": int.tryParse(experienceController.text.trim()) ?? 0,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Profile updated successfully!")),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Edit Profile"),
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(labelText: "Name"),
+                    ),
+                    TextField(
+                      controller: emailController,
+                      decoration:
+                          InputDecoration(labelText: "Email (Read-Only)"),
+                      readOnly: true,
+                    ),
+                    TextField(
+                      controller: phoneController,
+                      decoration: InputDecoration(labelText: "Phone"),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    if (role == "service_provider") ...[
+                      SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: selectedServiceCategory,
+                        items: serviceCategories.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category,
+                            child: Text(category),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedServiceCategory = value;
+                          });
+                        },
+                        decoration: InputDecoration(labelText: "Service Category"),
+                      ),
+                      TextField(
+                        controller: experienceController,
+                        decoration:
+                            InputDecoration(labelText: "Experience (Years)"),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: updateProfile,
+                      child: Text("Save Changes"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
