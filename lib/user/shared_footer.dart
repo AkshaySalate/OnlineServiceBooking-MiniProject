@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'package:online_service_booking/user/booking_page.dart';
+import 'package:online_service_booking/user/notification_page.dart';
 
 class SharedFooter extends StatelessWidget {
   final String customerId;
@@ -58,6 +59,14 @@ class SharedFooter extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => BookingPage(customerId: customerId),
+            ),
+          );
+        }
+        if (index == 3) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => NotificationPage(customerId: customerId)
             ),
           );
         }

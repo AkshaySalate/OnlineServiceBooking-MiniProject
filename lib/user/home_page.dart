@@ -4,8 +4,9 @@ import 'package:online_service_booking/user/shared_footer.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'service_provider_list.dart';
-import '../theme.dart';
+import 'package:online_service_booking/theme.dart';
 import 'shared_footer.dart';
+import 'package:online_service_booking/user/notification_page.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;
@@ -18,112 +19,155 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final Random random = Random();
+  bool hasNewNotification = false;
 
-  // List of icons to choose from
-  final List<IconData> iconList = [
-    Icons.local_florist,
-    Icons.eco,
-    Icons.ac_unit,
-    Icons.local_florist_sharp,
-    //Icons.star,
-    //Icons.favorite,
-    //Icons.cloud,
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen for notifications
+    FirebaseFirestore.instance
+        .collection("notifications")
+        .where("customerId", isEqualTo: widget.customerId)
+        .where("read", isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        hasNewNotification = snapshot.docs.isNotEmpty;
+      });
+    });
+
+    // Listen for Completed bookings & trigger review popup
+    FirebaseFirestore.instance
+        .collection("bookings")
+        .where("customerId", isEqualTo: widget.customerId)
+        .where("status", isEqualTo: "Completed")
+        .where("reviewed", isEqualTo: false) // Show only if not reviewed
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        print("✅ Booking marked as Completed. Showing review popup...");
+      }
+      for (var doc in snapshot.docs) {
+        print("✅ Review needed for booking: ${doc.id}");
+        _showReviewDialog(doc.id, doc["providerID"]);
+      }
+    });
+  }
+
+  // Function to show review popup
+  void _showReviewDialog(String bookingId, String providerId) {
+    print("📢 Review Dialog Triggered for Booking ID: $bookingId");
+    double rating = 5.0;
+    TextEditingController reviewController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Leave a Review"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Rate your experience:"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < rating ? Icons.star : Icons.star_border,
+                      color: Colors.orange,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        rating = index + 1.0;
+                      });
+                    },
+                  );
+                }),
+              ),
+              TextField(
+                controller: reviewController,
+                decoration: InputDecoration(hintText: "Write your review..."),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: Text("Submit"),
+              onPressed: () async {
+                print("✅ Submitting review...");
+                // Save review to Firestore
+                await FirebaseFirestore.instance.collection("reviews").add({
+                  "providerID": providerId,
+                  "customerID": widget.customerId,
+                  "rating": rating,
+                  "comment": reviewController.text,
+                  "timestamp": FieldValue.serverTimestamp(),
+                });
+
+                // Update booking to indicate review was submitted
+                await FirebaseFirestore.instance
+                    .collection("bookings")
+                    .doc(bookingId)
+                    .update({"reviewed": true});
+                print("✅ Review submitted for Booking ID: $bookingId");
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    List<Widget> generateIcons() {
-      return [
-        Positioned(
-          top: screenHeight * 0.05,
-          left: screenWidth * 0.08,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.17),
-        ),
-        Positioned(
-          top: screenHeight * 0.10,
-          right: screenWidth * 0.12,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.10),
-        ),
-        Positioned(
-          top: screenHeight * 0.22,
-          left: screenWidth * 0.25,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
-        ),
-        Positioned(
-          top: screenHeight * 0.25,
-          right: screenWidth * 0.15,
-          child: Icon(Icons.local_florist_sharp, color: Colors.red.shade200, size: screenWidth * 0.19),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.12,
-          left: screenWidth * 0.35,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.20),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.12,
-          right: screenWidth * 0.10,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.08),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.25,
-          left: screenWidth * 0.05,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.07),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.27,
-          right: screenWidth * 0.10,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.2),
-        ),
-        Positioned(
-          top: screenHeight * 0.40,
-          left: screenWidth * 0.50,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.09),
-        ),
-        Positioned(
-          bottom: screenHeight * 0.40,
-          left: screenWidth * 0.150,
-          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.25),
-        ),
-      ];
-    }
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Customer Home", style: TextStyle(color: Colors.white),),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 0.5,
-              colors: [
-                Colors.red.shade900,
-                Colors.red.shade900,
-                Colors.red.shade900,
-                Colors.red.shade900,
-              ],
-              stops: [0.01, 0.4, 0.7, 1.0],
+      appBar: AppTheme.gradientUserAppBarWithNotification(
+        title: 'HomePage',
+        hasNewNotification: hasNewNotification,
+        onNotificationPressed: () {
+          // Mark notifications as read when clicked
+          FirebaseFirestore.instance
+              .collection("notifications")
+              .where("customerId", isEqualTo: widget.customerId)
+              .where("read", isEqualTo: false)
+              .get()
+              .then((snapshot) {
+            for (var doc in snapshot.docs) {
+              doc.reference.update({"read": true});
+            }
+          });
+
+          setState(() {
+            hasNewNotification = false; // Remove red dot
+          });
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NotificationPage(customerId: widget.customerId),
             ),
-          ),
-        ),
+          );
+        },
       ),
+
       body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 0.5,
-            colors: [
-              Colors.red.shade300,
-              Colors.red.shade500,
-              Colors.red.shade700,
-              Colors.red.shade900,
-            ],
-            stops: [0.01, 0.4, 0.7, 1.0],
-          ),
-        ),
         child: Stack(
           children: [
-            ...generateIcons(),
+            // Gradient Background
+            Container(
+              decoration: AppTheme.gradientBackground,
+            ),
+
+            // Floating Icons
+            ...AppTheme.floatingIcons(context),
             FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance.collection("users").doc(widget.customerId).get(),
               builder: (context, snapshot) {
@@ -146,12 +190,6 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Customer Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                        SizedBox(height: 8),
-                        Text("Name: $name", style: TextStyle(fontSize: 16, color: Colors.white)),
-                        Text("Email: $email", style: TextStyle(fontSize: 16, color: Colors.white)),
-                        Text("Phone: $phone", style: TextStyle(fontSize: 16, color: Colors.white)),
-                        Divider(thickness: 2, height: 30),
                         Text("Available Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                         FutureBuilder<QuerySnapshot>(
                           future: FirebaseFirestore.instance.collection("services").get(),

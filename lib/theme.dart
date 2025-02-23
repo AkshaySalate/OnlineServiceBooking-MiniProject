@@ -82,6 +82,57 @@ class AppTheme {
     );
   }
 
+  /// 🌟 Gradient AppBar for User with Notifications
+  static PreferredSizeWidget gradientUserAppBarWithNotification({
+    required String title,
+    required bool hasNewNotification,
+    required VoidCallback onNotificationPressed,
+  }) {
+    return AppBar(
+      title: Text(title, style: TextStyle(color: Colors.white)),
+      actions: [
+        IconButton(
+          icon: Stack(
+            children: [
+              Icon(Icons.notifications, color: Colors.white),
+              if (hasNewNotification)
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 12,
+                      minHeight: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: onNotificationPressed,
+        ),
+      ],
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.5,
+            colors: [
+              Colors.red.shade900,
+              Colors.red.shade900,
+              Colors.red.shade900,
+            ],
+            stops: [0.01, 0.4, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+
+
   // 🔴 Gradient Background
   static BoxDecoration get gradientBackground {
     return BoxDecoration(

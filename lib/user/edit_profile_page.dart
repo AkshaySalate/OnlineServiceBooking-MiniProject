@@ -79,23 +79,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   /// Reverse Geocode: Convert LatLng to Address
-  Future<void> _getAddressFromLatLng(double lat, double lng) async {
+  Future<String> _getAddressFromLatLng(double lat, double lng) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
-
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
+        String address = "";
 
-        String formattedAddress =
-            "${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+        // Append house/building number if available
+        if (place.subThoroughfare != null && place.subThoroughfare!.isNotEmpty) {
+          address += "${place.subThoroughfare} ";
+        }
+        // Append street name if available
+        if (place.thoroughfare != null && place.thoroughfare!.isNotEmpty) {
+          address += "${place.thoroughfare}, ";
+        }
+        // Append neighborhood (subLocality) if available
+        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+          address += "${place.subLocality}, ";
+        }
+        // Append city (locality) if available
+        if (place.locality != null && place.locality!.isNotEmpty) {
+          address += "${place.locality}, ";
+        }
+        // Append state (administrativeArea) if available
+        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          address += "${place.administrativeArea}, ";
+        }
+        // Append postal code if available
+        if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+          address += "${place.postalCode}, ";
+        }
+        // Append country if available
+        if (place.country != null && place.country!.isNotEmpty) {
+          address += "${place.country}";
+        }
 
-        setState(() {
-          _addressController.text = formattedAddress; // Auto-fill address
-        });
+        return address.trim().replaceAll(RegExp(r",\s*$"), "");
       }
     } catch (e) {
       print("⚠️ Error fetching address: $e");
     }
+    return "Unknown Location";
   }
 
   //update User Profile in firestore

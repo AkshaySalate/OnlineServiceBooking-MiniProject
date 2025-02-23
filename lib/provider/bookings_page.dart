@@ -172,6 +172,10 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
                     color: _getStatusColor(booking['status']))),
             SizedBox(height: 10),
 
+            // Show Review Section Only for Completed Bookings
+            if (booking['status'] == "Completed")
+              _buildReviewSection(booking['customerID'], booking['id']),
+
             // Accept & Complete Buttons
             booking['status'] == "pending"
                 ? ElevatedButton(
@@ -212,6 +216,34 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
       ),
     );
   }
+
+  Widget _buildReviewSection(String customerId, String bookingId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("reviews")
+          .where("providerID", isEqualTo: widget.providerId)
+          .where("customerID", isEqualTo: customerId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Text("No review for this booking.", style: TextStyle(color: Colors.grey));
+        }
+
+        var review = snapshot.data!.docs.first;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Divider(thickness: 1),
+            Text("Customer Review", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 5),
+            Text("⭐ ${review["rating"]}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange)),
+            Text(review["comment"], style: TextStyle(fontSize: 14)),
+          ],
+        );
+      },
+    );
+  }
+
 
   /// **📌 Color Coding for Status**
   Color _getStatusColor(String status) {

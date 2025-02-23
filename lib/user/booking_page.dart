@@ -67,6 +67,17 @@ class _BookingPageState extends State<BookingPage> {
           serviceType = serviceData["serviceCategory"] ?? serviceType;
         }
 
+        // Fetch existing review (if any)
+        QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
+            .collection("reviews")
+            .where("providerID", isEqualTo: data["providerID"])
+            .where("customerID", isEqualTo: widget.customerId)
+            .get();
+
+        bool hasReviewed = reviewSnapshot.docs.isNotEmpty;
+        Map<String, dynamic>? reviewData =
+        hasReviewed ? reviewSnapshot.docs.first.data() as Map<String, dynamic> : null;
+
         String providerAddress = "Address not available";
         if (providerDoc.exists) {
           var providerData = providerDoc.data() as Map<String, dynamic>;
@@ -97,6 +108,8 @@ class _BookingPageState extends State<BookingPage> {
             "providerAddress": providerAddress,
             // Add providerID so that it can be passed to ChatScreen
             "providerID": data["providerID"],
+            "hasReviewed": hasReviewed,
+            "review": reviewData,
           };
 
           fetchedBookings.add(booking);
@@ -201,6 +214,16 @@ class _BookingPageState extends State<BookingPage> {
                                 color:
                                 _getStatusColor(booking['status']))),
                         SizedBox(height: 10),
+
+                        // ⭐ Review Section for Completed Bookings
+                        if (booking['status'] == "Completed")
+                          booking["hasReviewed"]
+                              ? _displayExistingReview(booking["review"])
+                              : ElevatedButton(
+                            onPressed: () => _showReviewDialog(booking["providerID"]),
+                            child: Text("Write a Review"),
+                          ),
+
                         // Display chat button if booking status is accepted (here we use "confirmed")
                         if (booking['status'].toString().toLowerCase() == 'pending' ||
                             booking['status'].toString().toLowerCase() == 'upcoming')
@@ -226,6 +249,86 @@ class _BookingPageState extends State<BookingPage> {
       ),
       bottomNavigationBar: SharedFooter(
           customerId: widget.customerId, currentIndex: 2),
+    );
+  }
+
+  Widget _displayExistingReview(Map<String, dynamic> review) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Divider(thickness: 1),
+        Text("Your Review", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        SizedBox(height: 5),
+        Text("⭐ ${review["rating"]}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange)),
+        Text(review["comment"], style: TextStyle(fontSize: 14)),
+      ],
+    );
+  }
+
+  void _showReviewDialog(String providerId) {
+    double rating = 5.0;
+    TextEditingController reviewController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Leave a Review"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Rate your experience:"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < rating ? Icons.star : Icons.star_border,
+                      color: Colors.orange,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        rating = index + 1.0;
+                      });
+                    },
+                  );
+                }),
+              ),
+              TextField(
+                controller: reviewController,
+                decoration: InputDecoration(hintText: "Write your review..."),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: Text("Submit"),
+              onPressed: () async {
+                // Save review to Firestore
+                await FirebaseFirestore.instance.collection("reviews").add({
+                  "providerID": providerId,
+                  "customerID": widget.customerId,
+                  "rating": rating,
+                  "comment": reviewController.text,
+                  "timestamp": FieldValue.serverTimestamp(),
+                });
+
+                setState(() {
+                  // Refresh bookings to show the submitted review
+                  _fetchUserBookings();
+                });
+
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

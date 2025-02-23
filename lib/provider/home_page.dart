@@ -6,6 +6,7 @@ import 'package:online_service_booking/provider//shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
 import 'package:online_service_booking/chat_screen.dart';
 import 'bookings_page.dart';
+import 'package:online_service_booking/provider/reviews_page.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;
@@ -61,6 +62,8 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
 
   /// Load Service Provider Data from Firestore
   Future<void> _loadServiceProviderData() async {
+    double ratingSum = 0.0;  // Define outside try block
+    int ratingCount = 0;      // Define outside try block
     try {
       DocumentSnapshot providerDoc = await FirebaseFirestore.instance
           .collection("service_providers")
@@ -75,6 +78,18 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
         });
       }
 
+      // ✅ Fetch Reviews to Calculate Average Rating
+      QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
+          .collection("reviews")
+          .where("providerID", isEqualTo: widget.providerId)
+          .get();
+
+      ratingCount = reviewSnapshot.docs.length; // Now accessible in catch block
+      for (var doc in reviewSnapshot.docs) {
+        var reviewData = doc.data() as Map<String, dynamic>;
+        ratingSum += reviewData["rating"];
+      }
+
       // ✅ Fetch Bookings
       QuerySnapshot bookingSnapshot = await FirebaseFirestore.instance
           .collection("bookings")
@@ -83,8 +98,11 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
 
       List<Map<String, dynamic>> fetchedBookings = [];
       double earnings = 0.0;
-      double ratingSum = 0.0;
-      int ratingCount = 0;
+
+      for (var doc in reviewSnapshot.docs) {
+        var reviewData = doc.data() as Map<String, dynamic>;
+        ratingSum += reviewData["rating"];
+      }
 
       for (var doc in bookingSnapshot.docs) {
         var data = doc.data() as Map<String, dynamic>;
@@ -138,6 +156,7 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     } catch (e) {
       print("⚠️ Error loading data: $e");
       setState(() {
+        avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0.0;
         _isLoading = false;
       });
     }
@@ -281,10 +300,51 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
                   children: [
                     _dashboardStat("Total Bookings", totalBookings.toString(), Icons.calendar_today),
                     _dashboardStat("Total Earnings", "₹${totalEarnings.toStringAsFixed(2)}", Icons.attach_money),
-                    _dashboardStat("Rating", avgRating > 0 ? avgRating.toStringAsFixed(1) : "N/A", Icons.star),
+                    _dashboardStat("Rating", avgRating > 0 ? "${avgRating.toStringAsFixed(1)} / 10" : "N/A", Icons.star),
                   ],
                 ),
                 SizedBox(height: 20),
+
+                /// **🔹 3️⃣ Service Provider Reviews Section**
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection("reviews")
+                      .where("providerID", isEqualTo: widget.providerId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Text("No reviews yet.");
+                    }
+
+                    var reviews = snapshot.data!.docs;
+                    double totalRating = 0;
+                    for (var review in reviews) {
+                      totalRating += review["rating"];
+                    }
+
+                    double averageRating = totalRating / reviews.length;
+
+                    return Card(
+                      margin: EdgeInsets.all(10),
+                      child: ListTile(
+                        leading: Icon(Icons.star, color: Colors.orange, size: 30),
+                        title: Text("⭐ ${averageRating.toStringAsFixed(1)}"),
+                        subtitle: Text("${reviews.length} reviews"),
+                        trailing: TextButton(
+                          child: Text("View Reviews"),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProviderReviewsPage(providerId: widget.providerId),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 /// **3️⃣ Availability Toggle**
                 Row(

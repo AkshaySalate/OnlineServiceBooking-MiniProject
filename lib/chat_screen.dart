@@ -34,10 +34,24 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void clearChat() async {
+    QuerySnapshot messages = await _firestore.collection("chats").doc(getChatRoomId()).collection("messages").get();
+    for (var doc in messages.docs) {
+      await doc.reference.delete();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Chat")),
+      appBar: AppBar(title: Text("Chat"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.white),
+            onPressed: clearChat,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
