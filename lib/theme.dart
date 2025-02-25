@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:online_service_booking/user/map_picker_screen.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -83,13 +84,30 @@ class AppTheme {
   }
 
   /// 🌟 Gradient AppBar for User with Notifications
-  static PreferredSizeWidget gradientUserAppBarWithNotification({
-    required String title,
+  /// 🌟 Gradient AppBar for User with Location & Notifications
+  static PreferredSizeWidget gradientUserAppBarWithSavedLocation({
+    required String savedAddress,
+    required VoidCallback onLocationTap,
     required bool hasNewNotification,
     required VoidCallback onNotificationPressed,
   }) {
     return AppBar(
-      title: Text(title, style: TextStyle(color: Colors.white)),
+      title: GestureDetector(
+        onTap: onLocationTap, // Open map when tapped
+        child: Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.white),
+            SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                savedAddress.isNotEmpty ? savedAddress : "Set Location",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
       actions: [
         IconButton(
           icon: Stack(
@@ -117,20 +135,16 @@ class AppTheme {
       ],
       flexibleSpace: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 0.5,
-            colors: [
-              Colors.red.shade900,
-              Colors.red.shade900,
-              Colors.red.shade900,
-            ],
-            stops: [0.01, 0.4, 1.0],
+          gradient: LinearGradient(
+            colors: [Colors.red.shade900, Colors.red.shade700],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
       ),
     );
   }
+
 
 
   // 🔴 Gradient Background

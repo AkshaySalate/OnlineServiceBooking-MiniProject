@@ -9,6 +9,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBWUmo3ArNkbE4-P8ldhD7X9UcSrqAqVGg" />
+
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

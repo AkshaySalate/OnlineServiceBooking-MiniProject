@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:online_service_booking/user/shared_footer.dart';
 import 'dart:math';
 import 'dart:ui';
-import 'service_provider_list.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:online_service_booking/theme.dart';
-import 'shared_footer.dart';
 import 'package:online_service_booking/user/notification_page.dart';
+import 'map_picker_screen.dart';
+import 'service_provider_list.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;
@@ -20,11 +23,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final Random random = Random();
   bool hasNewNotification = false;
+  String userAddress = "Fetching location..."; // ✅ Define `userAddress`
+  GeoPoint? userLocation;
 
   @override
   void initState() {
     super.initState();
-
+    _fetchUserLocation();
+    _listenForNotifications();
     // Listen for notifications
     FirebaseFirestore.instance
         .collection("notifications")
@@ -52,6 +58,93 @@ class _HomePageState extends State<HomePage> {
         print("✅ Review needed for booking: ${doc.id}");
         _showReviewDialog(doc.id, doc["providerID"]);
       }
+    });
+  }
+
+  /// **📌 Fetch User Location from Firestore**
+  void _fetchUserLocation() async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.customerId)
+        .get();
+
+    if (userDoc.exists) {
+      var userData = userDoc.data() as Map<String, dynamic>;
+
+      setState(() {
+        userAddress = userData['address'] ?? "Set Location"; // ✅ Fetch saved address only
+      });
+    }
+  }
+
+
+  /// **📌 Convert LatLng to Address**
+  Future<void> _getAddressFromLatLng(double lat, double lng) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        setState(() {
+          userAddress = "${place.subThoroughfare ?? ''} ${place.thoroughfare ?? ''}, ${place.locality ?? ''}";
+        });
+      }
+    } catch (e) {
+      print("⚠️ Error fetching address: $e");
+      setState(() {
+        userAddress = "Location not found";
+      });
+    }
+  }
+
+  /// **📌 Open Map Picker**
+  void _openMap() async {
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    LatLng initialLocation = LatLng(position.latitude, position.longitude);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          initialLocation: initialLocation,
+          onLocationSelected: (selectedLocation, address) {
+            _updateUserLocation(selectedLocation, address);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// **📌 Update User Location in Firestore**
+  void _updateUserLocation(LatLng newLocation, String newAddress) async {
+    await FirebaseFirestore.instance.collection("users").doc(widget.customerId).update({
+      "location": GeoPoint(newLocation.latitude, newLocation.longitude),
+      "address": newAddress, // ✅ Save the new address in Firestore
+    });
+
+    setState(() {
+      userAddress = newAddress; // ✅ Update UI with the new address
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Location Updated Successfully")),
+    );
+  }
+
+
+  /// **📌 Listen for Notifications**
+  void _listenForNotifications() {
+    FirebaseFirestore.instance
+        .collection("notifications")
+        .where("customerId", isEqualTo: widget.customerId)
+        .where("read", isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        hasNewNotification = snapshot.docs.isNotEmpty;
+      });
     });
   }
 
@@ -129,11 +222,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTheme.gradientUserAppBarWithNotification(
-        title: 'HomePage',
+      appBar: AppTheme.gradientUserAppBarWithSavedLocation(
+        savedAddress: userAddress,
+        onLocationTap: _openMap,
         hasNewNotification: hasNewNotification,
         onNotificationPressed: () {
-          // Mark notifications as read when clicked
           FirebaseFirestore.instance
               .collection("notifications")
               .where("customerId", isEqualTo: widget.customerId)
@@ -157,7 +250,6 @@ class _HomePageState extends State<HomePage> {
           );
         },
       ),
-
       body: Container(
         child: Stack(
           children: [
@@ -183,6 +275,9 @@ class _HomePageState extends State<HomePage> {
                 String name = customerData.get('name');
                 String email = customerData.get('email');
                 String phone = customerData.get('phone');
+
+                String address = customerData.get('address') ?? "Set Location"; // Default if address is missing
+                GeoPoint? location = customerData.get('location');
 
                 return Padding(
                   padding: EdgeInsets.all(16.0),
