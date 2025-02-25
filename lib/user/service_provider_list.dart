@@ -39,6 +39,27 @@ class _ServiceProviderListState extends State<ServiceProviderList> {
       String customerId = user.uid; // Current logged-in user
       String bookingId = FirebaseFirestore.instance.collection("bookings").doc().id; // Auto-generated ID
 
+      // Fetch service price
+      DocumentSnapshot serviceDoc = await FirebaseFirestore.instance
+          .collection("services")
+          .doc(widget.serviceCategoryDocId)
+          .get();
+
+      double servicePrice = 0.0;
+      if (serviceDoc.exists) {
+        var serviceData = serviceDoc.data() as Map<String, dynamic>;
+        if (serviceData.containsKey("priceRange")) {
+          // Convert priceRange to double
+          servicePrice = double.tryParse(serviceData["priceRange"].toString()) ?? 0.0;
+        }
+      }
+
+      if (servicePrice == 0.0) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: Service price not found.")));
+        return;
+      }
+
+      // Create a new booking entry in Firestore
       await FirebaseFirestore.instance.collection("bookings").doc(bookingId).set({
         "bookingID": bookingId,
         "customerID": customerId,
@@ -46,6 +67,7 @@ class _ServiceProviderListState extends State<ServiceProviderList> {
         "serviceCategory": widget.serviceCategoryDocId,
         "eventDate": DateTime.now().toIso8601String(), // Placeholder event date
         "status": "pending",
+        "amount": servicePrice,
       });
 
       // ✅ Add Notification for the Service Provider

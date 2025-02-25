@@ -128,12 +128,19 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
   }
 
   /// **📌 Update Booking Status (Accept / Complete)**
-  Future<void> _updateBookingStatus(String bookingId, String newStatus) async {
-    await FirebaseFirestore.instance
-        .collection("bookings")
-        .doc(bookingId)
-        .update({"status": newStatus});
+  Future<void> _updateBookingStatus(String bookingId, String newStatus, double amount) async {
+    await FirebaseFirestore.instance.collection("bookings").doc(bookingId).update({"status": newStatus});
+
+    // Store earnings only when booking is completed
+    if (newStatus == "Completed") {
+      await FirebaseFirestore.instance.collection("earnings").add({
+        "providerID": widget.providerId,
+        "amount": amount,
+        "date": FieldValue.serverTimestamp(),
+      });
+    }
   }
+
 
   /// **📌 Navigate to Chat Screen**
   void _openChat(String customerId) {
@@ -179,7 +186,7 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
             // Accept & Complete Buttons
             booking['status'] == "pending"
                 ? ElevatedButton(
-              onPressed: () => _updateBookingStatus(booking['id'], "Upcoming"),
+              onPressed: () => _updateBookingStatus(booking['id'], "Upcoming", booking['amount']),
               child: Text("Accept"),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             )
@@ -189,7 +196,7 @@ class _ProviderBookingsPageState extends State<ProviderBookingsPage> {
               children: [
                 ElevatedButton(
                   onPressed: () =>
-                      _updateBookingStatus(booking['id'], "Completed"),
+                      _updateBookingStatus(booking['id'], "Completed", booking['amount']),
                   child: Text("Complete"),
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange),

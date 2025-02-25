@@ -7,6 +7,7 @@ import 'package:online_service_booking/theme.dart';
 import 'package:online_service_booking/chat_screen.dart';
 import 'bookings_page.dart';
 import 'package:online_service_booking/provider/reviews_page.dart';
+import 'package:online_service_booking/provider/provider_earnings_page.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;
@@ -33,6 +34,7 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     super.initState();
     _loadServiceProviderData();
     _listenForUpdates();
+    _loadProviderEarnings();
   }
 
   Future<void> acceptBooking(String bookingId, String customerId) async {
@@ -59,6 +61,27 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     setState(() {});
   }
 
+  /// Load Provider Earnings from Firestore
+  Future<void> _loadProviderEarnings() async {
+    try {
+      QuerySnapshot earningsSnapshot = await FirebaseFirestore.instance
+          .collection("earnings")
+          .where("providerID", isEqualTo: widget.providerId)
+          .get();
+
+      double totalEarnings = 0.0;
+      for (var doc in earningsSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        totalEarnings += data["amount"];
+      }
+
+      setState(() {
+        this.totalEarnings = totalEarnings;
+      });
+    } catch (e) {
+      print("⚠️ Error loading earnings: $e");
+    }
+  }
 
   /// Load Service Provider Data from Firestore
   Future<void> _loadServiceProviderData() async {
@@ -299,7 +322,17 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _dashboardStat("Total Bookings", totalBookings.toString(), Icons.calendar_today),
-                    _dashboardStat("Total Earnings", "₹${totalEarnings.toStringAsFixed(2)}", Icons.attach_money),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProviderEarningsPage(providerId: widget.providerId),
+                          ),
+                        );
+                      },
+                      child: _dashboardStat("Total Earnings", "₹${totalEarnings.toStringAsFixed(2)}", Icons.attach_money),
+                    ),
                     _dashboardStat("Rating", avgRating > 0 ? "${avgRating.toStringAsFixed(1)} / 10" : "N/A", Icons.star),
                   ],
                 ),

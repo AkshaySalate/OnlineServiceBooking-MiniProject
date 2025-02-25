@@ -40,8 +40,12 @@ class _BookingPageState extends State<BookingPage> {
       for (var doc in bookingSnapshot.docs) {
         var data = doc.data() as Map<String, dynamic>;
 
+        // ✅ Fetch the service price from `amount`
+        double amount = data.containsKey("amount") ? (data["amount"] as num).toDouble() : 0.0;
+        print("✅ Found amount: $amount");
+
         // Convert eventDate from Timestamp to a formatted string
-        String eventDateFormatted = "";
+        String eventDateFormatted = data["eventDate"].toString();
         if (data["eventDate"] is Timestamp) {
           eventDateFormatted =
               (data["eventDate"] as Timestamp).toDate().toString();
@@ -60,8 +64,8 @@ class _BookingPageState extends State<BookingPage> {
             .collection("services")
             .doc(data["serviceCategory"]) // booking's serviceCategory is the service document id
             .get();
-        String serviceType = "Unknown Service Type";
 
+        String serviceType = "Unknown Service Type";
         if (serviceDoc.exists) {
           var serviceData = serviceDoc.data() as Map<String, dynamic>;
           serviceType = serviceData["serviceCategory"] ?? serviceType;
@@ -105,6 +109,7 @@ class _BookingPageState extends State<BookingPage> {
             "eventDate": eventDateFormatted,
             "status": data["status"],
             "providerName": providerData["name"],
+            "amount": amount,
             "providerAddress": providerAddress,
             // Add providerID so that it can be passed to ChatScreen
             "providerID": data["providerID"],
@@ -213,6 +218,11 @@ class _BookingPageState extends State<BookingPage> {
                                 fontWeight: FontWeight.bold,
                                 color:
                                 _getStatusColor(booking['status']))),
+                        if (booking['status'].toString().toLowerCase() == 'completed') ...[
+                          SizedBox(height: 5),
+                          Text("💰 Amount Paid: ₹${booking['amount']}",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                        ],
                         SizedBox(height: 10),
 
                         // ⭐ Review Section for Completed Bookings
