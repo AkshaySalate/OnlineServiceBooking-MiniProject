@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geocoding/geocoding.dart'; // For reverse geocoding
-import 'package:geolocator/geolocator.dart'; // For handling GPS location
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:online_service_booking/theme.dart';
 import 'shared_footer.dart';
+import 'package:online_service_booking/user/map_picker_screen.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String customerId;
@@ -23,7 +25,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   TextEditingController _dobController = TextEditingController();
 
   bool _isLoading = false;
-  bool _isFetchingLocation = false;
+  bool isFetchingLocation = false;
+  double currentLat = 0.0;
+  double currentLng = 0.0;
 
   @override
   void initState() {
@@ -41,89 +45,55 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _nameController.text = userData['name'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
         _dobController.text = userData['dob'] ?? '';
-      });
+        _addressController.text = userData["address"] ?? "No Address Set";
 
-      if (userData.containsKey('location')) {
-        GeoPoint location = userData['location'];
-        _getAddressFromLatLng(location.latitude, location.longitude);
-      }
+        if (userData.containsKey('location')) {
+          GeoPoint location = userData['location'];
+          currentLat = location.latitude;
+          currentLng = location.longitude;
+        }
+      });
     }
   }
 
-  /// Fetch current GPS location and update address
-  Future<void> _fetchCurrentLocation() async {
+  /// **Fetch current GPS location and update address**
+  void _fetchCurrentLocation() async {
     setState(() {
-      _isFetchingLocation = true;
+      isFetchingLocation = true;
     });
 
     try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
-      _getAddressFromLatLng(position.latitude, position.longitude);
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
 
-      // Update Firestore with new location
-      await FirebaseFirestore.instance.collection("users").doc(widget.customerId).update({
-        'location': GeoPoint(position.latitude, position.longitude),
-      });
-
-    } catch (e) {
-      print("⚠️ Error fetching location: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch location')));
-    }
-
-    setState(() {
-      _isFetchingLocation = false;
-    });
-  }
-
-  /// Reverse Geocode: Convert LatLng to Address
-  Future<String> _getAddressFromLatLng(double lat, double lng) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
-        String address = "";
+        String fullAddress = "${place.name}, ${place.subLocality}, ${place.locality}, "
+            "${place.administrativeArea}, ${place.postalCode}, ${place.country}";
 
-        // Append house/building number if available
-        if (place.subThoroughfare != null && place.subThoroughfare!.isNotEmpty) {
-          address += "${place.subThoroughfare} ";
-        }
-        // Append street name if available
-        if (place.thoroughfare != null && place.thoroughfare!.isNotEmpty) {
-          address += "${place.thoroughfare}, ";
-        }
-        // Append neighborhood (subLocality) if available
-        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
-          address += "${place.subLocality}, ";
-        }
-        // Append city (locality) if available
-        if (place.locality != null && place.locality!.isNotEmpty) {
-          address += "${place.locality}, ";
-        }
-        // Append state (administrativeArea) if available
-        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
-          address += "${place.administrativeArea}, ";
-        }
-        // Append postal code if available
-        if (place.postalCode != null && place.postalCode!.isNotEmpty) {
-          address += "${place.postalCode}, ";
-        }
-        // Append country if available
-        if (place.country != null && place.country!.isNotEmpty) {
-          address += "${place.country}";
-        }
+        setState(() {
+          _addressController.text = fullAddress;
+          currentLat = position.latitude;
+          currentLng = position.longitude;
+          isFetchingLocation = false;
+        });
 
-        return address.trim().replaceAll(RegExp(r",\s*$"), "");
+        // ✅ Update Firestore with new location
+        await FirebaseFirestore.instance.collection("users").doc(widget.customerId).update({
+          "location": GeoPoint(position.latitude, position.longitude),
+          "address": fullAddress,
+        });
       }
     } catch (e) {
-      print("⚠️ Error fetching address: $e");
+      setState(() {
+        isFetchingLocation = false;
+      });
+      print("⚠️ Error fetching location: $e");
     }
-    return "Unknown Location";
   }
 
-  //update User Profile in firestore
+  // **Update User Profile in Firestore**
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -142,7 +112,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Profile updated successfully')));
-      Navigator.pop(context); // Go back to Profile Page
+      Navigator.pop(context);
     }
   }
 
@@ -159,6 +129,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           // 🌟 Floating Icons
           ...AppTheme.floatingIcons(context),
+
           Padding(
             padding: EdgeInsets.all(16.0),
             child: Form(
@@ -166,48 +137,91 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// **📌 Name Field**
                   TextFormField(
                     controller: _nameController,
-                    style: TextStyle(color: Colors.white),  // 🌟 Text color set to white
-                    decoration: InputDecoration(labelText: "Name",
-                      labelStyle: TextStyle(color: Colors.white),),
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Name",
+                      labelStyle: TextStyle(color: Colors.white),
+                    ),
                     validator: (value) => value!.isEmpty ? "Please enter your name" : null,
                   ),
                   SizedBox(height: 10),
+
+                  /// **📌 Phone Field**
                   TextFormField(
                     controller: _phoneController,
-                    style: TextStyle(color: Colors.white),  // 🌟 Text color set to white
-                    decoration: InputDecoration(labelText: "Phone",
-                      labelStyle: TextStyle(color: Colors.white),),
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Phone",
+                      labelStyle: TextStyle(color: Colors.white),
+                    ),
                     keyboardType: TextInputType.phone,
                     validator: (value) => value!.isEmpty ? "Please enter your phone number" : null,
                   ),
                   SizedBox(height: 10),
-                  /// Address Field with Refresh Button
+
+                  /// **📌 Address Field with Refresh & Map Button**
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _addressController,
-                          style: TextStyle(color: Colors.white),  // 🌟 Text color set to white
-                          decoration: InputDecoration(labelText: "Address",
-                            labelStyle: TextStyle(color: Colors.white),),
+                          style: TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Address",
+                            labelStyle: TextStyle(color: Colors.white),
+                          ),
                           readOnly: true,
                         ),
                       ),
-                      SizedBox(width: 10),
-                      _isFetchingLocation
+                      SizedBox(width: 8),
+                      isFetchingLocation
                           ? CircularProgressIndicator() // Show loading when fetching
                           : IconButton(
                         icon: Icon(Icons.refresh, color: Colors.blue),
-                        onPressed: _fetchCurrentLocation,
+                        onPressed: isFetchingLocation ? null : _fetchCurrentLocation,
+                      ),
+                      SizedBox(width: 8),
+                      IconButton(
+                        icon: Image.network(
+                          "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+                          width: 24,
+                          height: 24,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MapPickerScreen(
+                                initialLocation: LatLng(currentLat, currentLng),
+                                onLocationSelected: (LatLng selectedLocation, String selectedAddress) {
+                                  setState(() {
+                                    _addressController.text = selectedAddress;
+                                    currentLat = selectedLocation.latitude;
+                                    currentLng = selectedLocation.longitude;
+                                  });
+
+                                  FirebaseFirestore.instance.collection("users").doc(widget.customerId).update({
+                                    "location": GeoPoint(selectedLocation.latitude, selectedLocation.longitude),
+                                    "address": selectedAddress,
+                                  });
+                                },
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
+
                   SizedBox(height: 10),
+
+                  /// **📌 Date of Birth Field**
                   TextFormField(
                     controller: _dobController,
-                    style: TextStyle(color: Colors.white),  // 🌟 Text color set to white
+                    style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: "Date of Birth",
                       hintText: "DD/MM/YYYY",
@@ -215,15 +229,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     validator: (value) => value!.isEmpty ? "Please enter your DOB" : null,
                   ),
+
                   SizedBox(height: 20),
+
+                  /// **📌 Update Profile Button**
                   _isLoading
                       ? Center(child: CircularProgressIndicator())
                       : ElevatedButton(
                     onPressed: _updateProfile,
-                    child: Text("Update Profile", style: TextStyle(color: Colors.black),),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFF8CB20),
-                    )
+                    child: Text("Update Profile", style: TextStyle(color: Colors.black)),
+                    style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFF8CB20)),
                   ),
                 ],
               ),
