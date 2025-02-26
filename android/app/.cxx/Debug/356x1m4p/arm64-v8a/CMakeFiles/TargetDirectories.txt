@@ -1,0 +1,2 @@
+C:/OnlineServiceBooking-MiniProject/android/app/.cxx/Debug/356x1m4p/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/OnlineServiceBooking-MiniProject/android/app/.cxx/Debug/356x1m4p/arm64-v8a/CMakeFiles/rebuild_cache.dir
