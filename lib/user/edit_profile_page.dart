@@ -28,6 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool isFetchingLocation = false;
   double currentLat = 0.0;
   double currentLng = 0.0;
+  String? _selectedAvatar;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _phoneController.text = userData['phone'] ?? '';
         _dobController.text = userData['dob'] ?? '';
         _addressController.text = userData["address"] ?? "No Address Set";
+        _selectedAvatar = userData['avatarUrl'] ?? null;
 
         if (userData.containsKey('location')) {
           GeoPoint location = userData['location'];
@@ -55,6 +57,42 @@ class _EditProfilePageState extends State<EditProfilePage> {
       });
     }
   }
+  /// **Load avatars from Firestore**
+  Future<void> _loadAvatars() async {
+    QuerySnapshot avatarsSnapshot = await FirebaseFirestore.instance.collection('avatars').get();
+    List<String> avatarUrls = avatarsSnapshot.docs.map((doc) => doc['url'] as String).toList();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return GridView.builder(
+          padding: EdgeInsets.all(10),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: avatarUrls.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () async {
+                setState(() {
+                  _selectedAvatar = avatarUrls[index];
+                });
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(widget.customerId)
+                    .update({'avatarUrl': _selectedAvatar});
+                Navigator.pop(context);
+              },
+              child: Image.network(avatarUrls[index], fit: BoxFit.cover),
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   /// **Fetch current GPS location and update address**
   void _fetchCurrentLocation() async {
@@ -137,6 +175,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// Profile Avatar Section
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: MediaQuery.of(context).size.width * 0.2,
+                          backgroundImage: _selectedAvatar != null
+                              ? NetworkImage(_selectedAvatar!)
+                              : AssetImage("assets/default_avatar.png") as ImageProvider,
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          right: 10,
+                          child: GestureDetector(
+                            onTap: _loadAvatars,
+                            child: Container(
+                              padding: EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(2, 2),
+                                  )
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                color: Colors.black,
+                                size: 15
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   /// **📌 Name Field**
                   TextFormField(
                     controller: _nameController,

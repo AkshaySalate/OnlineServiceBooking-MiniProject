@@ -18,17 +18,53 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
   final _formKey = GlobalKey<FormState>();
 
   TextEditingController _businessNameController = TextEditingController();
-  TextEditingController _ownerNameController = TextEditingController();
+  //TextEditingController _ownerNameController = TextEditingController();
   TextEditingController _phoneController = TextEditingController();
   TextEditingController _addressController = TextEditingController();
   bool _isAvailable = false;
   bool _isFetchingLocation = false;
   bool _isUpdating = false;
+  String? _selectedAvatar;
 
   @override
   void initState() {
     super.initState();
     _loadProviderData();
+  }
+
+  Future<void> _loadAvatars() async {
+    QuerySnapshot avatarsSnapshot = await FirebaseFirestore.instance.collection('avatars').get();
+    List<String> avatarUrls = avatarsSnapshot.docs.map((doc) => doc['url'] as String).toList();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return GridView.builder(
+          padding: EdgeInsets.all(10),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: avatarUrls.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () async {
+                setState(() {
+                  _selectedAvatar = avatarUrls[index];
+                });
+                await FirebaseFirestore.instance
+                    .collection("service_providers")
+                    .doc(widget.providerId)
+                    .update({'avatarUrl': _selectedAvatar});
+                Navigator.pop(context);
+              },
+              child: Image.network(avatarUrls[index], fit: BoxFit.cover),
+            );
+          },
+        );
+      },
+    );
   }
 
   /// Load Service Provider Data from Firestore
@@ -43,9 +79,10 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
 
       setState(() {
         _businessNameController.text = providerData['name'] ?? '';
-        _ownerNameController.text = providerData['ownerName'] ?? '';
+        //_ownerNameController.text = providerData['ownerName'] ?? '';
         _phoneController.text = providerData['phone'] ?? '';
         _isAvailable = providerData['availability'] ?? false;
+        _selectedAvatar = providerData['avatarUrl'] ?? null; // Fetching avatar URL
       });
 
       if (providerData.containsKey('location')) {
@@ -119,7 +156,7 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
           .doc(widget.providerId)
           .update({
         'name': _businessNameController.text.trim(),
-        'ownerName': _ownerNameController.text.trim(),
+        //'ownerName': _ownerNameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
       });
@@ -166,6 +203,48 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// Profile Avatar Section
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: MediaQuery.of(context).size.width * 0.2,
+                          backgroundImage: _selectedAvatar != null
+                              ? NetworkImage(_selectedAvatar!)
+                              : AssetImage("assets/default_avatar.png") as ImageProvider,
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          right: 10,
+                          child: GestureDetector(
+                            onTap: _loadAvatars,
+                            child: Container(
+                              padding: EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(2, 2),
+                                  )
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                color: Colors.black,
+                                size: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  //
+                  SizedBox(height: 20),
                   /// Business Name
                   TextFormField(
                     controller: _businessNameController,
@@ -179,7 +258,7 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
                   ),
                   SizedBox(height: 10),
 
-                  /// Owner Name
+                  /*/// Owner Name
                   TextFormField(
                     controller: _ownerNameController,
                     style: TextStyle(color: Colors.white),
@@ -190,7 +269,7 @@ class _ServiceProviderProfileState extends State<ServiceProviderProfile> {
                     validator: (value) =>
                     value!.isEmpty ? "Please enter your name" : null,
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 10),*/
 
                   /// Phone Number
                   TextFormField(

@@ -42,6 +42,20 @@ class ProfilePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          double avatarSize = constraints.maxWidth * 0.2;
+                          return CircleAvatar(
+                            radius: avatarSize,
+                            backgroundImage: customerData['avatarUrl'] != null
+                                ? NetworkImage(customerData['avatarUrl'])
+                                : AssetImage("assets/default_avatar.png") as ImageProvider,
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     Text("Name: ${customerData['name']}", style: TextStyle(fontSize: 18.0, color: Colors.white)),
                     SizedBox(height: 10),
                     Text("Email: ${customerData['email']}", style: TextStyle(fontSize: 18.0, color: Colors.white)),
