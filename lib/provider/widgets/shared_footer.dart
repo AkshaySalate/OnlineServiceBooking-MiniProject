@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'profile_page.dart';
-import 'package:online_service_booking/user/booking_page.dart';
-import 'package:online_service_booking/user/notification_page.dart';
+import 'package:online_service_booking/provider/pages/home_page.dart';
+import 'package:online_service_booking/provider/pages/profile_page.dart';
+import 'package:online_service_booking/provider/pages/bookings_page.dart';
 
 class SharedFooter extends StatelessWidget {
-  final String customerId;
+  final String providerId;
   final int currentIndex;
 
-  const SharedFooter({super.key, required this.customerId, required this.currentIndex});
+  const SharedFooter({super.key, required this.providerId, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +41,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(customerId: customerId),
+              builder: (context) => ServiceProviderHomePage(providerId: providerId),
             ),
           );
         }
@@ -50,7 +49,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ProfilePage(customerId: customerId),
+              builder: (context) => ServiceProviderProfile(providerId: providerId),
             ),
           );
         }
@@ -58,15 +57,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => BookingPage(customerId: customerId),
-            ),
-          );
-        }
-        if (index == 3) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => NotificationPage(customerId: customerId)
+              builder: (context) => ProviderBookingsPage(providerId: providerId),
             ),
           );
         }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:online_service_booking/user/shared_footer.dart';
+import 'package:online_service_booking/user/widgets/shared_footer.dart';
 
 class NotificationPage extends StatefulWidget {
   final String customerId;

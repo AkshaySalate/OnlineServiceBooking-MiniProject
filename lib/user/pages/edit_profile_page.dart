@@ -4,8 +4,8 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:online_service_booking/theme.dart';
-import 'shared_footer.dart';
-import 'package:online_service_booking/user/map_picker_screen.dart';
+import 'package:online_service_booking/user/widgets/shared_footer.dart';
+import 'package:online_service_booking/core/map_picker_screen.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String customerId;

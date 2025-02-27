@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:online_service_booking/provider/home_page.dart';
-import 'package:online_service_booking/provider/profile_page.dart';
-import 'package:online_service_booking/provider/bookings_page.dart';
+import 'package:online_service_booking/user/pages/home_page.dart';
+import 'package:online_service_booking/user/pages/profile_page.dart';
+import 'package:online_service_booking/user/pages/booking_page.dart';
+import 'package:online_service_booking/user/pages/notification_page.dart';
 
 class SharedFooter extends StatelessWidget {
-  final String providerId;
+  final String customerId;
   final int currentIndex;
 
-  const SharedFooter({super.key, required this.providerId, required this.currentIndex});
+  const SharedFooter({super.key, required this.customerId, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ServiceProviderHomePage(providerId: providerId),
+              builder: (context) => HomePage(customerId: customerId),
             ),
           );
         }
@@ -49,7 +50,7 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ServiceProviderProfile(providerId: providerId),
+              builder: (context) => ProfilePage(customerId: customerId),
             ),
           );
         }
@@ -57,7 +58,15 @@ class SharedFooter extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ProviderBookingsPage(providerId: providerId),
+              builder: (context) => BookingPage(customerId: customerId),
+            ),
+          );
+        }
+        if (index == 3) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => NotificationPage(customerId: customerId)
             ),
           );
         }

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:online_service_booking/provider//shared_footer.dart';
+import 'package:online_service_booking/provider/widgets/shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
-import 'package:online_service_booking/chat_screen.dart';
+import 'package:online_service_booking/chat/chat_screen.dart';
 import 'bookings_page.dart';
-import 'package:online_service_booking/provider/reviews_page.dart';
-import 'package:online_service_booking/provider/provider_earnings_page.dart';
+import 'package:online_service_booking/provider/pages/reviews_page.dart';
+import 'package:online_service_booking/provider/pages/provider_earnings_page.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'shared_footer.dart';
-import 'package:online_service_booking/chat_screen.dart';
+import '../widgets/shared_footer.dart';
+import 'package:online_service_booking/chat/chat_screen.dart';
 import 'package:geocoding/geocoding.dart';
 
 class ProviderBookingsPage extends StatefulWidget {

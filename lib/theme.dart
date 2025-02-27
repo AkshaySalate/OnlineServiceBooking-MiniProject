@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:online_service_booking/user/map_picker_screen.dart';
+import 'package:online_service_booking/core/map_picker_screen.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {

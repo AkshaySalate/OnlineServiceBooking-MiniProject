@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';  // For getting location
 import 'package:permission_handler/permission_handler.dart';
-import 'user/home_page.dart';
-import 'package:online_service_booking/provider/home_page.dart';
+import 'package:online_service_booking/user/pages/home_page.dart';
+import 'package:online_service_booking/provider/pages/home_page.dart';
 import 'dart:math';
-import 'theme.dart';
+import 'package:online_service_booking/theme.dart';
 
 class LoginSignupPage extends StatefulWidget {
   @override

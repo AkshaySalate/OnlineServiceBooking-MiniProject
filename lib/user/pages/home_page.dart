@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:online_service_booking/user/shared_footer.dart';
+import 'package:online_service_booking/user/widgets/shared_footer.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:online_service_booking/theme.dart';
-import 'package:online_service_booking/user/notification_page.dart';
-import 'map_picker_screen.dart';
-import 'service_provider_list.dart';
+import 'package:online_service_booking/user/pages/notification_page.dart';
+import 'package:online_service_booking/core/map_picker_screen.dart';
+import 'package:online_service_booking/user/pages/service_provider_list.dart';
 
 class HomePage extends StatefulWidget {
   final String customerId;

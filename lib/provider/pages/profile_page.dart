@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:online_service_booking/provider/shared_footer.dart';
+import 'package:online_service_booking/provider/widgets/shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
 
 class ServiceProviderProfile extends StatefulWidget {

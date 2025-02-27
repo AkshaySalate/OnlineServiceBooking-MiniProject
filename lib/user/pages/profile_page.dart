@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_profile_page.dart';
-import 'shared_footer.dart';
+import 'package:online_service_booking/user/widgets/shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
-import 'package:online_service_booking/login_signup.dart';
+import 'package:online_service_booking/auth/login_signup.dart';
 
 class ProfilePage extends StatelessWidget {
   final String customerId;
