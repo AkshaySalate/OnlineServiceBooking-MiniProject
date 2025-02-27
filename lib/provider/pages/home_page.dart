@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:online_service_booking/provider/widgets/shared_footer.dart';
 import 'package:online_service_booking/theme.dart';
@@ -8,6 +9,7 @@ import 'package:online_service_booking/chat/chat_screen.dart';
 import 'bookings_page.dart';
 import 'package:online_service_booking/provider/pages/reviews_page.dart';
 import 'package:online_service_booking/provider/pages/provider_earnings_page.dart';
+import 'package:online_service_booking/core/map_picker_screen.dart';
 
 class ServiceProviderHomePage extends StatefulWidget {
   final String providerId;
@@ -19,6 +21,8 @@ class ServiceProviderHomePage extends StatefulWidget {
 }
 
 class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
+  String _savedAddress = "Fetching Loacation..";
+  LatLng? _currentLocation;
   bool _isAvailable = false;
   bool _isLoading = true;
   int totalBookings = 0;
@@ -35,6 +39,52 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
     _loadServiceProviderData();
     _listenForUpdates();
     _loadProviderEarnings();
+    _loadProviderLocation();
+  }
+
+  Future<void> _loadProviderLocation() async {
+    DocumentSnapshot providerDoc = await FirebaseFirestore.instance
+        .collection("service_providers")
+        .doc(widget.providerId)
+        .get();
+
+    if (providerDoc.exists) {
+      var providerData = providerDoc.data() as Map<String, dynamic>;
+      if (providerData.containsKey('location')) {
+        GeoPoint location = providerData['location'];
+        setState(() {
+          _currentLocation = LatLng(location.latitude, location.longitude);
+          _savedAddress = providerData['address'] ?? "Unknown Address";
+        });
+      }
+    }
+  }
+
+  void _openMapPicker() {
+    if (_currentLocation == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          initialLocation: _currentLocation!,
+          onLocationSelected: (LatLng newLocation, String newAddress) async {
+            setState(() {
+              _currentLocation = newLocation;
+              _savedAddress = newAddress;
+            });
+
+            await FirebaseFirestore.instance
+                .collection("service_providers")
+                .doc(widget.providerId)
+                .update({
+              "location": GeoPoint(newLocation.latitude, newLocation.longitude),
+              "address": newAddress,
+            });
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> acceptBooking(String bookingId, String customerId) async {
@@ -281,9 +331,14 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTheme.gradientAppBarWithIcon(
-        "Dashboard",
-        Icons.notifications,
+      appBar: AppTheme.gradientUserAppBarWithSavedLocation(
+        savedAddress: _savedAddress,
+        onLocationTap: _openMapPicker,
+        hasNewNotification: false, // Adjust based on unread notifications
+        onNotificationPressed: () {
+          // Handle notification click
+        },
+        /*Icons.notifications,
         unreadNotifications > 0 ? Colors.orange : Colors.white,
             () {
           _markNotificationsAsRead();
@@ -291,7 +346,7 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
             context: context,
             builder: (_) => _notificationDialog(),
           );
-        },
+        },*/
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -346,7 +401,7 @@ class _ServiceProviderHomePageState extends State<ServiceProviderHomePage> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Text("No reviews yet.");
+                      return Text("No reviews yet.",style: TextStyle(color: Colors.white));
                     }
 
                     var reviews = snapshot.data!.docs;
