@@ -17,14 +17,158 @@ void main() async {
   }
 }
 
-
 class AdminPanelApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Admin Panel',
       theme: ThemeData.dark(),
-      home: AdminDashboard(),
+      home: AuthCheck(),
+    );
+  }
+}
+
+class AuthCheck extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?> (
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasData) {
+          return AdminDashboard();
+        }
+        return LoginPage();
+      },
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String errorMessage = '';
+  bool isNewAdmin = false;
+
+  Future<void> checkAdminExists() async {
+    final email = emailController.text.trim();
+    //final adminDoc = await FirebaseFirestore.instance.collection('admins').doc(email).get();
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('admins')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final adminDoc = querySnapshot.docs.first;
+      if (adminDoc.data()['passwordSet'] == true) {
+        login();
+      } else {
+        await adminDoc.reference.update({'passwordSet': false});
+        setState(() {
+          isNewAdmin = true;
+        });
+      }
+    } else {
+      setState(() {
+        errorMessage = 'Admin account does not exist';
+      });
+    }
+
+    Future<void> checkAdminExists() async {
+      final email = emailController.text.trim();
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('admins')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final adminDoc = querySnapshot.docs.first;
+        if (adminDoc.data()['passwordSet'] == true) {
+          login();
+        } else {
+          await adminDoc.reference.update({'passwordSet': false});
+          setState(() {
+            isNewAdmin = true;
+          });
+        }
+      } else {
+        setState(() {
+          errorMessage = 'Admin account does not exist';
+        });
+      }
+    }
+  }
+
+  Future<void> setPassword() async {
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim().isEmpty ? 'qwerty@1234567' : passwordController.text.trim();
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await FirebaseFirestore.instance.collection('admins').doc(email).update({'passwordSet': true});
+      setState(() {
+        isNewAdmin = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error setting password';
+      });
+    }
+  }
+
+  Future<void> login() async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Invalid email or password';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Admin Login")),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(labelText: "Email"),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(labelText: "Password"),
+              obscureText: true,
+            ),
+            SizedBox(height: 10),
+            if (errorMessage.isNotEmpty)
+              Text(errorMessage, style: TextStyle(color: Colors.red)),
+            ElevatedButton(
+              onPressed: isNewAdmin ? setPassword : checkAdminExists,
+              child: Text(isNewAdmin ? "Set Password" : "Login"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
