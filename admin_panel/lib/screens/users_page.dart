@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io' show File;
+import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
 
 class UsersPage extends StatefulWidget {
   @override
@@ -10,10 +16,12 @@ class _UsersPageState extends State<UsersPage> {
   TextEditingController searchController = TextEditingController();
   String searchQuery = "";
   List<DocumentSnapshot> users = [];
+  List<String> selectedUsers = [];
   bool isLoading = false;
   bool hasMore = true;
   DocumentSnapshot? lastDocument;
   final int perPage = 10;
+  String selectedRoleFilter = "All";
 
   @override
   void initState() {
@@ -23,7 +31,6 @@ class _UsersPageState extends State<UsersPage> {
 
   Future<void> _fetchUsers() async {
     if (!hasMore || isLoading) return;
-
     setState(() => isLoading = true);
 
     Query query = FirebaseFirestore.instance
@@ -46,74 +53,46 @@ class _UsersPageState extends State<UsersPage> {
     setState(() => isLoading = false);
   }
 
-  void _editUser(String userId, String name, String email, String role) {
-    TextEditingController nameController = TextEditingController(text: name);
-    TextEditingController emailController = TextEditingController(text: email);
-    String selectedRole = role;
+  void _exportUsers() async {
+    List<List<String>> csvData = [
+      ["Name", "Email", "Role"]
+    ];
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Edit User"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: InputDecoration(labelText: "Name")),
-            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
-            DropdownButtonFormField(
-              value: selectedRole,
-              onChanged: (value) {
-                setState(() {
-                  selectedRole = value.toString();
-                });
-              },
-              items: ["User", "Admin", "Service Provider"].map((role) {
-                return DropdownMenuItem(value: role, child: Text(role));
-              }).toList(),
-              decoration: InputDecoration(labelText: "Role"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-          ElevatedButton(
-            onPressed: () {
-              FirebaseFirestore.instance.collection('users').doc(userId).update({
-                'name': nameController.text,
-                'email': emailController.text,
-                'role': selectedRole,
-              });
-              Navigator.pop(context);
-            },
-            child: Text("Save"),
-          ),
-        ],
-      ),
-    );
+    for (var user in users) {
+      csvData.add([user['name'], user['email'], user['role'] ?? 'User']);
+    }
+
+    String csv = const ListToCsvConverter().convert(csvData);
+
+    if (kIsWeb) {
+      // Flutter Web: Use `html` package to download file
+      final bytes = utf8.encode(csv);
+      final blob = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute("download", "users.csv")
+        ..click();
+      html.Url.revokeObjectUrl(url);
+    } else {
+      // Mobile/Desktop: Use `path_provider`
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/users.csv');
+      await file.writeAsString(csv);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Exported to ${file.path}")),
+      );
+    }
   }
 
-  void _confirmDelete(String userId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Delete User"),
-        content: Text("Are you sure you want to delete this user?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-          ElevatedButton(
-            onPressed: () {
-              FirebaseFirestore.instance.collection('users').doc(userId).delete();
-              setState(() {
-                users.removeWhere((user) => user.id == userId);
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text("Delete"),
-          ),
-        ],
-      ),
-    );
+  void _bulkDelete() {
+    for (String userId in selectedUsers) {
+      FirebaseFirestore.instance.collection('users').doc(userId).delete();
+    }
+    setState(() {
+      users.removeWhere((user) => selectedUsers.contains(user.id));
+      selectedUsers.clear();
+    });
   }
 
   @override
@@ -121,22 +100,45 @@ class _UsersPageState extends State<UsersPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Users"),
+        actions: [
+          IconButton(icon: Icon(Icons.download), onPressed: _exportUsers),
+          if (selectedUsers.isNotEmpty)
+            IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: _bulkDelete),
+        ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: "Search by name or email...",
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value.toLowerCase();
-                });
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: "Search by name or email...",
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value.toLowerCase();
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+                DropdownButton(
+                  value: selectedRoleFilter,
+                  items: ["All", "User", "Admin", "Service Provider"].map((role) {
+                    return DropdownMenuItem(value: role, child: Text(role));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedRoleFilter = value.toString();
+                    });
+                  },
+                ),
+              ],
             ),
           ),
         ),
@@ -145,15 +147,19 @@ class _UsersPageState extends State<UsersPage> {
         itemCount: users.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == users.length) {
-            _fetchUsers(); // Load more users when reaching the end
+            _fetchUsers();
             return Center(child: CircularProgressIndicator());
           }
 
           var user = users[index];
           var name = user['name'] ?? 'No Name';
           var email = user['email'] ?? 'No Email';
+          var role = user['role'] ?? 'User';
 
           if (!name.toLowerCase().contains(searchQuery) && !email.toLowerCase().contains(searchQuery)) {
+            return SizedBox.shrink();
+          }
+          if (selectedRoleFilter != "All" && role != selectedRoleFilter) {
             return SizedBox.shrink();
           }
 
@@ -170,8 +176,18 @@ class _UsersPageState extends State<UsersPage> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(icon: Icon(Icons.edit), onPressed: () => _editUser(user.id, name, email, user['role'] ?? 'User')),
-                  IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(user.id)),
+                  Checkbox(
+                    value: selectedUsers.contains(user.id),
+                    onChanged: (checked) {
+                      setState(() {
+                        if (checked == true) {
+                          selectedUsers.add(user.id);
+                        } else {
+                          selectedUsers.remove(user.id);
+                        }
+                      });
+                    },
+                  ),
                 ],
               ),
             ),

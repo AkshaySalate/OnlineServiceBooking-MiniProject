@@ -38,6 +38,8 @@ dependencies:
   firebase_auth: ^5.5.1
   firebase_core: ^3.12.1
   fl_chart: ^0.70.2
+  csv: ^6.0.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
