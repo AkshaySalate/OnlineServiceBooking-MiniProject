@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> checkAdminExists() async {
     final email = emailController.text.trim();
-    //final adminDoc = await FirebaseFirestore.instance.collection('admins').doc(email).get();
+
     final querySnapshot = await FirebaseFirestore.instance
         .collection('admins')
         .where('email', isEqualTo: email)
@@ -68,10 +68,11 @@ class _LoginPageState extends State<LoginPage> {
 
     if (querySnapshot.docs.isNotEmpty) {
       final adminDoc = querySnapshot.docs.first;
+
+      // ✅ Correct condition check
       if (adminDoc.data()['passwordSet'] == true) {
-        login();
+        login(); // 🔥 Directly login if password is already set
       } else {
-        await adminDoc.reference.update({'passwordSet': false});
         setState(() {
           isNewAdmin = true;
         });
@@ -81,52 +82,53 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage = 'Admin account does not exist';
       });
     }
+  }
 
-    Future<void> checkAdminExists() async {
+  Future<void> setPassword() async {
+    try {
       final email = emailController.text.trim();
+      final password = passwordController.text.trim().isEmpty
+          ? 'qwerty@1234567'  // Default password if empty
+          : passwordController.text.trim();
 
+      // ✅ Step 1: Fetch the correct admin document
       final querySnapshot = await FirebaseFirestore.instance
           .collection('admins')
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        final adminDoc = querySnapshot.docs.first;
-        if (adminDoc.data()['passwordSet'] == true) {
-          login();
-        } else {
-          await adminDoc.reference.update({'passwordSet': false});
-          setState(() {
-            isNewAdmin = true;
-          });
-        }
-      } else {
+      if (querySnapshot.docs.isEmpty) {
         setState(() {
-          errorMessage = 'Admin account does not exist';
+          errorMessage = "Admin account not found!";
         });
+        return;
       }
-    }
-  }
 
-  Future<void> setPassword() async {
-    try {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim().isEmpty ? 'qwerty@1234567' : passwordController.text.trim();
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final adminDocRef = querySnapshot.docs.first.reference; // ✅ Get the correct document reference
+
+      // ✅ Step 2: Create a new FirebaseAuth user
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await FirebaseFirestore.instance.collection('admins').doc(email).update({'passwordSet': true});
+
+      // ✅ Step 3: Update Firestore after successful authentication
+      await adminDocRef.update({'passwordSet': true});
+
       setState(() {
-        isNewAdmin = false;
+        isNewAdmin = false; // ✅ Reset state to prevent unnecessary password prompts
       });
+
+      // ✅ Step 4: Automatically log in after setting the password
+      login();
     } catch (e) {
       setState(() {
-        errorMessage = 'Error setting password';
+        errorMessage = 'Error setting password: ${e.toString()}';
       });
     }
   }
+
 
   Future<void> login() async {
     try {
@@ -241,7 +243,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return Center(child: Text("Error: ${details.exceptionAsString()}", style: TextStyle(color: Colors.red)));
     };
     return Scaffold(
-      appBar: AppBar(title: Text("Admin Dashboard")),
+      appBar: AppBar(
+        title: Text("Admin Dashboard"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut(); // Sign out the admin
+
+              // Redirect to Login Page and remove all previous routes
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+                    (route) => false, // This removes all routes from the stack
+              );
+            },
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: ListView(
           children: [
