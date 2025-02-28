@@ -34,5 +34,25 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyALQ1ZG2qt-hUOG2nXCZvEGmaP0-w7Jjp4",
+      authDomain: "onlineservicebooking-768d9.firebaseapp.com",
+      projectId: "onlineservicebooking-768d9",
+      storageBucket: "onlineservicebooking-768d9.firebasestorage.app",
+      messagingSenderId: "7991962289",
+      appId: "1:7991962289:web:8b9c42a00ab9092543d090"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
 </body>
 </html>
