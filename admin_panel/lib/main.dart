@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'firebase_options.dart';
+import 'package:admin_panel/screens/auth_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class AdminPanelApp extends StatelessWidget {
   }
 }
 
-class AuthCheck extends StatelessWidget {
+/*class AuthCheck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?> (
@@ -44,9 +45,9 @@ class AuthCheck extends StatelessWidget {
       },
     );
   }
-}
+}*/
 
-class LoginPage extends StatefulWidget {
+/*class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -173,9 +174,9 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-}
+}*/
 
-class AdminDashboard extends StatefulWidget {
+/*class AdminDashboard extends StatefulWidget {
   @override
   _AdminDashboardState createState() => _AdminDashboardState();
 }
@@ -347,9 +348,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-}
+}*/
 
-class UsersPage extends StatefulWidget {
+/*class UsersPage extends StatefulWidget {
   @override
   _UsersPageState createState() => _UsersPageState();
 }
@@ -420,9 +421,9 @@ class _UsersPageState extends State<UsersPage> {
       ),
     );
   }
-}
+}*/
 
-class ProvidersPage extends StatefulWidget {
+/*class ProvidersPage extends StatefulWidget {
   @override
   _ProvidersPageState createState() => _ProvidersPageState();
 }
@@ -507,9 +508,9 @@ class _ProvidersPageState extends State<ProvidersPage> {
       ),
     );
   }
-}
+}*/
 
-class BookingsPage extends StatelessWidget {
+/*class BookingsPage extends StatelessWidget {
   Future<String> _fetchUserName(String userId) async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
     return userDoc.exists ? userDoc['name'] ?? 'Unknown' : 'Unknown';
@@ -571,9 +572,9 @@ class BookingsPage extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
-class EarningsPage extends StatefulWidget {
+/*class EarningsPage extends StatefulWidget {
   @override
   _EarningsPageState createState() => _EarningsPageState();
 }
@@ -627,4 +628,4 @@ class _EarningsPageState extends State<EarningsPage> {
       ),
     );
   }
-}
+}*/

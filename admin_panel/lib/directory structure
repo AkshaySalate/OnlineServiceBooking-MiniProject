@@ -1,0 +1,14 @@
+lib/
+│── main.dart
+│── firebase_options.dart
+│── screens/
+│   ├── auth_check.dart
+│   ├── login_page.dart
+│   ├── admin_dashboard.dart
+│   ├── users_page.dart
+│   ├── providers_page.dart
+│   ├── bookings_page.dart
+│   ├── earnings_page.dart
+│── widgets/
+│   ├── stat_card.dart
+│   ├── bookings_chart.dart
