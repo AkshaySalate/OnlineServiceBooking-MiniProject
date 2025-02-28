@@ -127,17 +127,6 @@ class _UsersPageState extends State<UsersPage> {
                   ),
                 ),
                 SizedBox(width: 10),
-                DropdownButton(
-                  value: selectedRoleFilter,
-                  items: ["All", "User", "Admin", "Service Provider"].map((role) {
-                    return DropdownMenuItem(value: role, child: Text(role));
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedRoleFilter = value.toString();
-                    });
-                  },
-                ),
               ],
             ),
           ),
