@@ -54,6 +54,39 @@ class _BookingsPageState extends State<BookingsPage> {
     }
   }
 
+  void _addNoteToBooking(String bookingId, String existingNote) {
+    TextEditingController noteController = TextEditingController(text: existingNote);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Add/Edit Note"),
+          content: TextField(
+            controller: noteController,
+            decoration: InputDecoration(labelText: "Enter notes"),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
+                  'notes': noteController.text,
+                });
+                Navigator.pop(context);
+              },
+              child: Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showBookingDetails(BuildContext context, DocumentSnapshot booking, String userName, String providerName) {
     showDialog(
       context: context,
@@ -78,6 +111,10 @@ class _BookingsPageState extends State<BookingsPage> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text("Close"),
+            ),
+            ElevatedButton(
+              onPressed: () => _addNoteToBooking(booking.id, (booking.data() as Map<String, dynamic>)['notes'] ?? ""),
+              child: Text("Edit Note"),
             ),
           ],
         );
@@ -148,18 +185,6 @@ class _BookingsPageState extends State<BookingsPage> {
                       title: Text("Booking ID: ${booking.id}"),
                       subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}"),
                       onTap: () => _showBookingDetails(context, booking, userName, providerName),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (booking['status'] != 'Completed')
-                            IconButton(
-                              icon: Icon(Icons.check, color: Colors.green),
-                              onPressed: () {
-                                _completeBooking(booking.id, booking['providerID'], booking['amount']);
-                              },
-                            ),
-                        ],
-                      ),
                     ),
                   );
                 },
