@@ -30,6 +30,13 @@ class _BookingsPageState extends State<BookingsPage> {
       'amount': amount,
       'date': Timestamp.now(),
     });
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'providerID': providerId,
+      'message': 'Your booking has been marked as completed!',
+      'read': false,
+      'timestamp': Timestamp.now(),
+    });
   }
 
   void _pickDateRange() async {
