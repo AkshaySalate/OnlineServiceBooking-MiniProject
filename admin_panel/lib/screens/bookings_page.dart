@@ -10,6 +10,7 @@ class BookingsPage extends StatefulWidget {
 class _BookingsPageState extends State<BookingsPage> {
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
+  String _selectedStatus = "All";
 
   Future<String> _fetchUserName(String userId) async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
@@ -56,6 +57,20 @@ class _BookingsPageState extends State<BookingsPage> {
             icon: Icon(Icons.calendar_today),
             onPressed: _pickDateRange,
           ),
+          DropdownButton<String>(
+            value: _selectedStatus,
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedStatus = newValue!;
+              });
+            },
+            items: ["All", "pending", "Completed", "Upcoming"].map((status) {
+              return DropdownMenuItem(
+                value: status,
+                child: Text(status),
+              );
+            }).toList(),
+          ),
         ],
       ),
       body: StreamBuilder(
@@ -69,6 +84,10 @@ class _BookingsPageState extends State<BookingsPage> {
               DateTime bookingDate = DateTime.parse(booking['eventDate']);
               return bookingDate.isAfter(_selectedStartDate!) && bookingDate.isBefore(_selectedEndDate!);
             }).toList();
+          }
+
+          if (_selectedStatus != "All") {
+            bookings = bookings.where((booking) => booking['status'] == _selectedStatus).toList();
           }
 
           return ListView.builder(
@@ -89,22 +108,17 @@ class _BookingsPageState extends State<BookingsPage> {
                     margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: ListTile(
                       title: Text("Booking ID: ${booking.id}"),
-                      subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'Pending'}\nAmount: ${booking['amount']}\nEvent Date: ${DateFormat.yMMMd().format(DateTime.parse(booking['eventDate']))}"),
+                      subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}\nEvent Date: ${DateFormat.yMMMd().format(DateTime.parse(booking['eventDate']))}"),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: Icon(Icons.cancel, color: Colors.red),
-                            onPressed: () {
-                              FirebaseFirestore.instance.collection('bookings').doc(booking.id).update({'status': 'Cancelled'});
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.check, color: Colors.green),
-                            onPressed: () {
-                              _completeBooking(booking.id, booking['providerID'], booking['amount']);
-                            },
-                          ),
+                          if (booking['status'] != 'Completed')
+                            IconButton(
+                              icon: Icon(Icons.check, color: Colors.green),
+                              onPressed: () {
+                                _completeBooking(booking.id, booking['providerID'], booking['amount']);
+                              },
+                            ),
                         ],
                       ),
                     ),
