@@ -47,6 +47,37 @@ class _BookingsPageState extends State<BookingsPage> {
     }
   }
 
+  void _showBookingDetails(BuildContext context, DocumentSnapshot booking, String userName, String providerName) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Booking Details"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Booking ID: ${booking.id}"),
+              Text("Customer: $userName"),
+              Text("Provider: $providerName"),
+              Text("Status: ${booking['status'] ?? 'pending'}"),
+              Text("Amount: ${booking['amount']}"),
+              Text("Event Date: ${DateFormat.yMMMd().format(DateTime.parse(booking['eventDate']))}"),
+              if ((booking.data() as Map<String, dynamic>).containsKey('notes'))
+                Text("Notes: ${booking['notes']}", style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +139,8 @@ class _BookingsPageState extends State<BookingsPage> {
                     margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: ListTile(
                       title: Text("Booking ID: ${booking.id}"),
-                      subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}\nEvent Date: ${DateFormat.yMMMd().format(DateTime.parse(booking['eventDate']))}"),
+                      subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}"),
+                      onTap: () => _showBookingDetails(context, booking, userName, providerName),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
