@@ -35,7 +35,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return FirebaseFirestore.instance.collection('bookings').snapshots().map((snapshot) => snapshot.docs.length);
   }
 
-  Stream<double> _getTotalEarnings() {
+  Stream<num> _getTotalEarnings() {
     return FirebaseFirestore.instance.collection('earnings').snapshots().map(
           (snapshot) => snapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as double)),
     );
@@ -50,7 +50,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    _fetchStats();
     _debugFirestoreData();
   }
 
@@ -106,22 +105,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                StreamBuilder<int>(
-                  stream: _getTotalUsers(),
-                  builder: (context, snapshot) => _statCard("Total Users", snapshot.data?.toString() ?? "0"),
-                ),
-                StreamBuilder<int>(
-                  stream: _getTotalProviders(),
-                  builder: (context, snapshot) => _statCard("Total Providers", snapshot.data?.toString() ?? "0"),
-                ),
-                StreamBuilder<int>(
-                  stream: _getTotalBookings(),
-                  builder: (context, snapshot) => _statCard("Total Bookings", snapshot.data?.toString() ?? "0"),
-                ),
-                StreamBuilder<double>(
-                  stream: _getTotalEarnings(),
-                  builder: (context, snapshot) => _statCard("Total Earnings", "\₹${snapshot.data?.toStringAsFixed(2) ?? "0.00"}"),
-                ),
+                _buildStatCard("Total Users", Icons.people, Colors.blue, _getTotalUsers()),
+                _buildStatCard("Total Providers", Icons.business, Colors.orange, _getTotalProviders()),
+                _buildStatCard("Total Bookings", Icons.book_online, Colors.green, _getTotalBookings()),
+                _buildStatCard("Total Earnings", Icons.currency_rupee, Colors.purple, _getTotalEarnings(), isCurrency: true),
               ],
             ),
             SizedBox(height: 20),
@@ -145,20 +132,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _statCard(String title, String value) {
-    return Card(
-      elevation: 4,
-      color: Colors.blueGrey,
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            SizedBox(height: 10),
-            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.yellow)),
-          ],
-        ),
-      ),
+  Widget _buildStatCard(String title, IconData icon, Color color, Stream<num> stream, {bool isCurrency = false}) {
+    return StreamBuilder<num>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Card(
+            elevation: 4,
+            color: color,
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Icon(icon, size: 30, color: Colors.white),
+                  SizedBox(height: 10),
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 10),
+                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                ],
+              ),
+            ),
+          );
+        }
+
+        String value = isCurrency ? "₹${snapshot.data?.toStringAsFixed(2) ?? "0.00"}" : snapshot.data?.toString() ?? "0";
+        return Card(
+          elevation: 4,
+          color: color,
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Icon(icon, size: 30, color: Colors.white),
+                SizedBox(height: 10),
+                Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                SizedBox(height: 10),
+                Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
