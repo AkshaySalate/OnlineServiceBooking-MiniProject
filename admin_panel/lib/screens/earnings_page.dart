@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:csv/csv.dart';
+import 'dart:html' as html;
+import 'dart:convert';
 
 class EarningsPage extends StatefulWidget {
   @override
@@ -32,12 +35,42 @@ class _EarningsPageState extends State<EarningsPage> {
     }
   }
 
+  Future<void> _exportEarningsToCSV() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('earnings').get();
+    List<List<String>> csvData = [
+      ["Provider Name", "Amount", "Date"]
+    ];
+
+    for (var earning in snapshot.docs) {
+      var data = earning.data() as Map<String, dynamic>;
+      String providerName = await _fetchProviderName(data['providerID']);
+      csvData.add([
+        providerName,
+        data['amount'].toString(),
+        DateFormat.yMMMd().format((data['date'] as Timestamp).toDate()),
+      ]);
+    }
+
+    String csv = const ListToCsvConverter().convert(csvData);
+    final bytes = utf8.encode(csv);
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute("download", "earnings.csv")
+      ..click();
+    html.Url.revokeObjectUrl(url);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Earnings Report"),
         actions: [
+          IconButton(
+            icon: Icon(Icons.download),
+            onPressed: _exportEarningsToCSV,
+          ),
           IconButton(
             icon: Icon(Icons.calendar_today),
             onPressed: _pickDateRange,
