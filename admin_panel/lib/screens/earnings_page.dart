@@ -12,6 +12,11 @@ class _EarningsPageState extends State<EarningsPage> {
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
 
+  Future<String> _fetchProviderName(String providerId) async {
+    DocumentSnapshot providerDoc = await FirebaseFirestore.instance.collection('service_providers').doc(providerId).get();
+    return providerDoc.exists ? providerDoc['name'] ?? 'Unknown' : 'Unknown';
+  }
+
   void _pickDateRange() async {
     DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
@@ -76,9 +81,15 @@ class _EarningsPageState extends State<EarningsPage> {
                   itemCount: earnings.length,
                   itemBuilder: (context, index) {
                     var earning = earnings[index];
-                    return ListTile(
-                      title: Text("Provider ID: ${earning['providerID']}"),
-                      subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
+                    return FutureBuilder(
+                      future: _fetchProviderName(earning['providerID']),
+                      builder: (context, AsyncSnapshot<String> providerSnapshot) {
+                        String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
+                        return ListTile(
+                          title: Text("Provider: $providerName"),
+                          subtitle: Text("Provider ID: ${earning['providerID']}\nAmount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
+                        );
+                      },
                     );
                   },
                 );
