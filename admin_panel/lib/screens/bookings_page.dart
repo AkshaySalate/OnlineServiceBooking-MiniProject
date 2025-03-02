@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:csv/csv.dart';
+import 'dart:html' as html;
+import 'dart:convert';
 
 class BookingsPage extends StatefulWidget {
   @override
@@ -122,12 +125,45 @@ class _BookingsPageState extends State<BookingsPage> {
     );
   }
 
+  Future<void> _exportBookingsToCSV() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('bookings').get();
+    List<List<String>> csvData = [
+      ["Booking ID", "Customer ID", "Provider ID", "Amount", "Event Date", "Status", "Notes"]
+    ];
+
+    for (var booking in snapshot.docs) {
+      var data = booking.data() as Map<String, dynamic>;
+      csvData.add([
+        booking.id,
+        data['customerID'] ?? '',
+        data['providerID'] ?? '',
+        data['amount'].toString(),
+        data['eventDate'] ?? '',
+        data['status'] ?? 'pending',
+        data.containsKey('notes') ? data['notes'] : ''
+      ]);
+    }
+
+    String csv = const ListToCsvConverter().convert(csvData);
+    final bytes = utf8.encode(csv);
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute("download", "bookings.csv")
+      ..click();
+    html.Url.revokeObjectUrl(url);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Bookings"),
         actions: [
+          IconButton(
+            icon: Icon(Icons.download),
+            onPressed: _exportBookingsToCSV,
+          ),
           IconButton(
             icon: Icon(Icons.calendar_today),
             onPressed: _pickDateRange,
