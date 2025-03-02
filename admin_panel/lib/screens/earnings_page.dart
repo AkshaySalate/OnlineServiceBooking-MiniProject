@@ -15,6 +15,11 @@ class _EarningsPageState extends State<EarningsPage> {
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
   num totalEarnings = 0;
+  final int _perPage = 10;
+  DocumentSnapshot? _lastDocument;
+  List<DocumentSnapshot> _earnings = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
 
   Future<void> _calculateTotalEarnings() async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('earnings').get();
@@ -71,10 +76,47 @@ class _EarningsPageState extends State<EarningsPage> {
     html.Url.revokeObjectUrl(url);
   }
 
+  Future<void> _loadEarnings() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() => _isLoading = true);
+
+    Query query = FirebaseFirestore.instance
+        .collection('earnings')
+        .orderBy(selectedSort, descending: true)
+        .limit(_perPage);
+
+    if (_lastDocument != null) {
+      query = query.startAfterDocument(_lastDocument!);
+    }
+
+    QuerySnapshot snapshot = await query.get();
+    if (snapshot.docs.isNotEmpty) {
+      setState(() {
+        _earnings.addAll(snapshot.docs);
+        _lastDocument = snapshot.docs.last;
+        if (snapshot.docs.length < _perPage) _hasMore = false;
+      });
+    } else {
+      setState(() => _hasMore = false);
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadAllEarnings() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('earnings').orderBy(selectedSort, descending: true).get();
+    setState(() {
+      _earnings = snapshot.docs;
+      _hasMore = false;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _calculateTotalEarnings();
+    _loadEarnings();
   }
 
   @override
@@ -102,54 +144,39 @@ class _EarningsPageState extends State<EarningsPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: DropdownButton<String>(
-              value: selectedSort,
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedSort = newValue!;
-                });
-              },
-              items: ["amount", "providerID"].map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text("Sort by: $value"),
-                );
-              }).toList(),
-            ),
-          ),
+
           Expanded(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance.collection('earnings').orderBy(selectedSort, descending: true).snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-                var earnings = snapshot.data!.docs;
-
-                if (_selectedStartDate != null && _selectedEndDate != null) {
-                  earnings = earnings.where((earning) {
-                    DateTime earningDate = (earning['date'] as Timestamp).toDate();
-                    return earningDate.isAfter(_selectedStartDate!) && earningDate.isBefore(_selectedEndDate!);
-                  }).toList();
-                }
-
-                return ListView.builder(
-                  itemCount: earnings.length,
-                  itemBuilder: (context, index) {
-                    var earning = earnings[index];
-                    return FutureBuilder(
-                      future: _fetchProviderName(earning['providerID']),
-                      builder: (context, AsyncSnapshot<String> providerSnapshot) {
-                        String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
-                        return ListTile(
-                          title: Text("Provider: $providerName"),
-                          subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
-                        );
-                      },
+            child: ListView.builder(
+              itemCount: _earnings.length,
+              itemBuilder: (context, index) {
+                var earning = _earnings[index];
+                return FutureBuilder(
+                  future: _fetchProviderName(earning['providerID']),
+                  builder: (context, AsyncSnapshot<String> providerSnapshot) {
+                    String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
+                    return ListTile(
+                      title: Text("Provider: $providerName"),
+                      subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
                     );
                   },
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: _hasMore ? _loadEarnings : null,
+                  child: Text("Load More"),
+                ),
+                TextButton(
+                  onPressed: _loadAllEarnings,
+                  child: Text("Load All"),
+                ),
+              ],
             ),
           ),
         ],
