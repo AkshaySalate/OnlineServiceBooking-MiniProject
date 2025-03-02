@@ -95,40 +95,204 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Dashboard Stats", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatCard("Total Users", Icons.people, Colors.blue, _getTotalUsers()),
-                _buildStatCard("Total Providers", Icons.business, Colors.orange, _getTotalProviders()),
-                _buildStatCard("Total Bookings", Icons.book_online, Colors.green, _getTotalBookings()),
-                _buildStatCard("Total Earnings", Icons.currency_rupee, Colors.purple, _getTotalEarnings(), isCurrency: true),
-              ],
-            ),
-            SizedBox(height: 20),
-            DropdownButton<String>(
-              value: selectedFilter,
-              items: ["This Week", "Last Week", "This Month", "Last Month", "This Year"]
-                  .map((filter) => DropdownMenuItem(value: filter, child: Text(filter)))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedFilter = value!;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            Expanded(child: _buildBookingsChart()),
-            //SizedBox(height: 200, child: _buildBookingsChart()),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Dashboard Stats", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatCard("Total Users", Icons.people, Colors.blue, _getTotalUsers()),
+                  _buildStatCard("Total Providers", Icons.business, Colors.orange, _getTotalProviders()),
+                  _buildStatCard("Total Bookings", Icons.book_online, Colors.green, _getTotalBookings()),
+                  _buildStatCard("Total Earnings", Icons.currency_rupee, Colors.purple, _getTotalEarnings(), isCurrency: true),
+                ],
+              ),
+              //SizedBox(height: 20),
+              DropdownButton<String>(
+                value: selectedFilter,
+                items: ["This Week", "Last Week", "This Month", "Last Month", "This Year"]
+                    .map((filter) => DropdownMenuItem(value: filter, child: Text(filter)))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedFilter = value!;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(width: 500, height: 300, child: _buildBookingsChart()), // Booking Chart
+                    SizedBox(width: 20),
+                    Container(width: 250, height: 300, child: _buildUserDistributionPieChart()), // Pie Chart in the middle
+                    SizedBox(width: 20),
+                    Container(width: 500, height: 300, child: _buildMonthlyBookingsBarChart()), // Bar Chart on the right
+                  ],
+                ),
+              ),
+              //Expanded(child: _buildBookingsChart()),
+              //SizedBox(height: 200, child: _buildUserDistributionPieChart()),
+              //Expanded(child: _buildUserDistributionPieChart()),
+              //SizedBox(height: 200, child: _buildBookingsChart()),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUserDistributionPieChart() {
+    return StreamBuilder<int>(
+      stream: _getTotalUsers(),
+      builder: (context, userSnapshot) {
+        return StreamBuilder<int>(
+          stream: _getTotalProviders(),
+          builder: (context, providerSnapshot) {
+            if (!userSnapshot.hasData || !providerSnapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            int users = userSnapshot.data ?? 0;
+            int providers = providerSnapshot.data ?? 0;
+
+            List<PieChartSectionData> sections = [
+              PieChartSectionData(
+                value: users.toDouble(),
+                title: "Users",
+                color: Colors.blue,
+                radius: 50,
+              ),
+              PieChartSectionData(
+                value: providers.toDouble(),
+                title: "Providers",
+                color: Colors.orange,
+                radius: 50,
+              ),
+            ];
+
+            return SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sections: sections,
+                  borderData: FlBorderData(show: false),
+                  centerSpaceRadius: 40,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /*Widget _buildMonthlyBookingsBarChart() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text("No booking data available"));
+        }
+
+        Map<String, int> monthlyData = {};
+        for (var doc in snapshot.data!.docs) {
+          var data = doc.data() as Map<String, dynamic>;
+          if (data.containsKey('eventDate')) {
+            DateTime bookingDate = DateTime.parse(data['eventDate']);
+            String monthYear = DateFormat('MMM yyyy').format(bookingDate);
+            monthlyData[monthYear] = (monthlyData[monthYear] ?? 0) + 1;
+          }
+        }
+
+        List<BarChartGroupData> bars = monthlyData.entries.toList().asMap().entries.map((entry) {
+          return BarChartGroupData(
+            x: entry.key,
+            barRods: [
+              BarChartRodData(toY: entry.value.value.toDouble(), gradient: LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent])),
+            ],
+          );
+        }).toList();
+
+        return SizedBox(
+          height: 250,
+          child: BarChart(
+            BarChartData(
+              barGroups: bars,
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(show: true),
+            ),
+          ),
+        );
+      },
+    );
+  }*/
+
+  Widget _buildMonthlyBookingsBarChart() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text("No booking data available"));
+        }
+
+        Map<String, int> monthlyData = {};
+        for (var doc in snapshot.data!.docs) {
+          var data = doc.data() as Map<String, dynamic>;
+          if (data.containsKey('eventDate')) {
+            DateTime bookingDate = DateTime.parse(data['eventDate']);
+            String monthYear = DateFormat('MMM yyyy').format(bookingDate);
+            monthlyData[monthYear] = (monthlyData[monthYear] ?? 0) + 1;
+          }
+        }
+
+        List<String> monthLabels = monthlyData.keys.toList();
+        List<BarChartGroupData> bars = monthLabels.asMap().entries.map((entry) {
+          int index = entry.key;
+          String monthName = entry.value;
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: monthlyData[monthName]!.toDouble(),
+                gradient: LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+              ),
+            ],
+          );
+        }).toList();
+
+        return SizedBox(
+          height: 250,
+          child: BarChart(
+            BarChartData(
+              barGroups: bars,
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      int index = value.toInt();
+                      if (index >= 0 && index < monthLabels.length) {
+                        return Text(monthLabels[index], style: TextStyle(fontSize: 12));
+                      }
+                      return Text('');
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
