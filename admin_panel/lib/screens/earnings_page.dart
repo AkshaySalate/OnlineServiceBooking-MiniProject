@@ -18,6 +18,7 @@ class _EarningsPageState extends State<EarningsPage> {
   final int _perPage = 10;
   DocumentSnapshot? _lastDocument;
   List<DocumentSnapshot> _earnings = [];
+  Map<String, num> _providerEarnings = {};
   bool _isLoading = false;
   bool _hasMore = true;
 
@@ -26,6 +27,27 @@ class _EarningsPageState extends State<EarningsPage> {
     num sum = snapshot.docs.fold(0, (total, doc) => total + (doc['amount'] as num));
     setState(() {
       totalEarnings = sum;
+    });
+  }
+
+  Future<void> _calculateProviderEarnings() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('earnings').get();
+    Map<String, num> providerTotals = {};
+
+    for (var doc in snapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      String providerId = data['providerID'];
+      num amount = data['amount'];
+
+      if (providerTotals.containsKey(providerId)) {
+        providerTotals[providerId] = providerTotals[providerId]! + amount;
+      } else {
+        providerTotals[providerId] = amount;
+      }
+    }
+
+    setState(() {
+      _providerEarnings = providerTotals;
     });
   }
 
@@ -116,6 +138,7 @@ class _EarningsPageState extends State<EarningsPage> {
   void initState() {
     super.initState();
     _calculateTotalEarnings();
+    _calculateProviderEarnings();
     _loadEarnings();
   }
 
@@ -135,46 +158,87 @@ class _EarningsPageState extends State<EarningsPage> {
           ),
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              "Total Earnings: \$${totalEarnings.toStringAsFixed(2)}",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-
           Expanded(
-            child: ListView.builder(
-              itemCount: _earnings.length,
-              itemBuilder: (context, index) {
-                var earning = _earnings[index];
-                return FutureBuilder(
-                  future: _fetchProviderName(earning['providerID']),
-                  builder: (context, AsyncSnapshot<String> providerSnapshot) {
-                    String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
-                    return ListTile(
-                      title: Text("Provider: $providerName"),
-                      subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
-                    );
-                  },
-                );
-              },
+            flex: 7,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "Total Earnings: \$${totalEarnings.toStringAsFixed(2)}",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _earnings.length,
+                    itemBuilder: (context, index) {
+                      var earning = _earnings[index];
+                      return FutureBuilder(
+                        future: _fetchProviderName(earning['providerID']),
+                        builder: (context, AsyncSnapshot<String> providerSnapshot) {
+                          String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
+                          return ListTile(
+                            title: Text("Provider: $providerName"),
+                            subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: _hasMore ? _loadEarnings : null,
+                        child: Text("Load More"),
+                      ),
+                      TextButton(
+                        onPressed: _loadAllEarnings,
+                        child: Text("Load All"),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          VerticalDivider(),
+          Expanded(
+            flex: 3,
+            child: Column(
               children: [
-                TextButton(
-                  onPressed: _hasMore ? _loadEarnings : null,
-                  child: Text("Load More"),
-                ),
-                TextButton(
-                  onPressed: _loadAllEarnings,
-                  child: Text("Load All"),
+                //Text("Earnings Breakdown by Provider", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      Text("Earnings Breakdown by Provider", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Expanded(
+                        child: _providerEarnings.isNotEmpty
+                            ? ListView(
+                          children: _providerEarnings.entries.map((entry) {
+                            return FutureBuilder(
+                              future: _fetchProviderName(entry.key),
+                              builder: (context, AsyncSnapshot<String> providerSnapshot) {
+                                String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
+                                return ListTile(
+                                  title: Text("Provider: $providerName"),
+                                  subtitle: Text("Total Earnings: \$${entry.value.toStringAsFixed(2)}"),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        )
+                            : Center(child: Text("No earnings data available")),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
