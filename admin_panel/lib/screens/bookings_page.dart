@@ -14,6 +14,8 @@ class _BookingsPageState extends State<BookingsPage> {
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
   String _selectedStatus = "All";
+  int _limit = 10;
+  bool _loadAllData = false;
 
   Future<String> _fetchUserName(String userId) async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
@@ -27,7 +29,6 @@ class _BookingsPageState extends State<BookingsPage> {
 
   Future<void> _completeBooking(String bookingId, String providerId, num amount) async {
     await FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({'status': 'Completed'});
-
     await FirebaseFirestore.instance.collection('earnings').add({
       'providerID': providerId,
       'amount': amount,
@@ -40,6 +41,10 @@ class _BookingsPageState extends State<BookingsPage> {
       'read': false,
       'timestamp': Timestamp.now(),
     });
+  }
+
+  Future<void> _cancelBooking(String bookingId) async {
+    await FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({'status': 'Cancelled'});
   }
 
   void _pickDateRange() async {
@@ -55,6 +60,26 @@ class _BookingsPageState extends State<BookingsPage> {
         _selectedEndDate = pickedRange.end;
       });
     }
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _selectedStartDate = null;
+      _selectedEndDate = null;
+      _selectedStatus = "All";
+    });
+  }
+
+  void _loadMore() {
+    setState(() {
+      _limit += 10;
+    });
+  }
+
+  void _setLoadAll() {
+    setState(() {
+      _loadAllData = true;
+    });
   }
 
   void _addNoteToBooking(String bookingId, String existingNote) {
@@ -175,17 +200,21 @@ class _BookingsPageState extends State<BookingsPage> {
                 _selectedStatus = newValue!;
               });
             },
-            items: ["All", "pending", "Completed", "Upcoming"].map((status) {
+            items: ["All", "pending", "Completed", "Upcoming", "Cancelled"].map((status) {
               return DropdownMenuItem(
                 value: status,
                 child: Text(status),
               );
             }).toList(),
           ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _resetFilters,
+          ),
         ],
       ),
       body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
+        stream: FirebaseFirestore.instance.collection('bookings').limit(_loadAllData ? 1000 : _limit).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
           var bookings = snapshot.data!.docs;
@@ -193,7 +222,8 @@ class _BookingsPageState extends State<BookingsPage> {
           if (_selectedStartDate != null && _selectedEndDate != null) {
             bookings = bookings.where((booking) {
               DateTime bookingDate = DateTime.parse(booking['eventDate']);
-              return bookingDate.isAfter(_selectedStartDate!) && bookingDate.isBefore(_selectedEndDate!);
+              return bookingDate.isAfter(_selectedStartDate!.subtract(Duration(days: 1))) &&
+                  bookingDate.isBefore(_selectedEndDate!.add(Duration(days: 1)));
             }).toList();
           }
 
@@ -201,31 +231,64 @@ class _BookingsPageState extends State<BookingsPage> {
             bookings = bookings.where((booking) => booking['status'] == _selectedStatus).toList();
           }
 
-          return ListView.builder(
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              var booking = bookings[index];
-              return FutureBuilder(
-                future: Future.wait([
-                  _fetchUserName(booking['customerID']),
-                  _fetchProviderName(booking['providerID'])
-                ]),
-                builder: (context, AsyncSnapshot<List<String>> userProviderSnapshot) {
-                  if (!userProviderSnapshot.hasData) return ListTile(title: Text("Loading..."));
-                  String userName = userProviderSnapshot.data![0];
-                  String providerName = userProviderSnapshot.data![1];
-                  return Card(
-                    elevation: 3,
-                    margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    child: ListTile(
-                      title: Text("Booking ID: ${booking.id}"),
-                      subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}"),
-                      onTap: () => _showBookingDetails(context, booking, userName, providerName),
-                    ),
-                  );
-                },
-              );
-            },
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: bookings.length,
+                  itemBuilder: (context, index) {
+                    var booking = bookings[index];
+                    return FutureBuilder(
+                      future: Future.wait([
+                        _fetchUserName(booking['customerID']),
+                        _fetchProviderName(booking['providerID'])
+                      ]),
+                      builder: (context, AsyncSnapshot<List<String>> userProviderSnapshot) {
+                        if (!userProviderSnapshot.hasData) return ListTile(title: Text("Loading..."));
+                        String userName = userProviderSnapshot.data![0];
+                        String providerName = userProviderSnapshot.data![1];
+                        return Card(
+                          elevation: 3,
+                          margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          child: ListTile(
+                            title: Text("Booking ID: ${booking.id}"),
+                            subtitle: Text("User: $userName\nProvider: $providerName\nStatus: ${booking['status'] ?? 'pending'}\nAmount: ${booking['amount']}\nEvent Date: ${DateFormat.yMMMd().format(DateTime.parse(booking['eventDate']))}"),
+                            onTap: () => _showBookingDetails(context, booking, userName, providerName),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.cancel, color: Colors.red),
+                                  onPressed: () => _cancelBooking(booking.id),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.check_circle, color: Colors.green),
+                                  onPressed: () => _completeBooking(booking.id, booking['providerID'], booking['amount']),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: _loadMore,
+                    child: Text("Load More"),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _setLoadAll,
+                    child: Text("Load All"),
+                  ),
+                ],
+              ),
+            ],
           );
         },
       ),
