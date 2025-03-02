@@ -62,26 +62,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  Future<void> _fetchStats() async {
-    try {
-      QuerySnapshot usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
-      QuerySnapshot providersSnapshot = await FirebaseFirestore.instance.collection('service_providers').get();
-      QuerySnapshot bookingsSnapshot = await FirebaseFirestore.instance.collection('bookings').get();
-      QuerySnapshot earningsSnapshot = await FirebaseFirestore.instance.collection('earnings').get();
-
-      double earnings = earningsSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as double));
-
-      setState(() {
-        totalUsers = usersSnapshot.docs.length;
-        totalProviders = providersSnapshot.docs.length;
-        totalBookings = bookingsSnapshot.docs.length;
-        totalEarnings = earnings;
-      });
-    } catch (e) {
-      print("Error fetching stats: $e");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ErrorWidget.builder = (FlutterErrorDetails details) {
