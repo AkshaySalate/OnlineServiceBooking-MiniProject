@@ -167,7 +167,7 @@ class _EarningsPageState extends State<EarningsPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    "Total Earnings: \$${totalEarnings.toStringAsFixed(2)}",
+                    "Total Earnings: \₹${totalEarnings.toStringAsFixed(2)}",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -182,7 +182,7 @@ class _EarningsPageState extends State<EarningsPage> {
                           String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
                           return ListTile(
                             title: Text("Provider: $providerName"),
-                            subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
+                            subtitle: Text("Amount: \₹${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
                           );
                         },
                       );
@@ -229,7 +229,7 @@ class _EarningsPageState extends State<EarningsPage> {
                                 String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
                                 return ListTile(
                                   title: Text("Provider: $providerName"),
-                                  subtitle: Text("Total Earnings: \$${entry.value.toStringAsFixed(2)}"),
+                                  subtitle: Text("Total Earnings: \₹${entry.value.toStringAsFixed(2)}"),
                                 );
                               },
                             );
