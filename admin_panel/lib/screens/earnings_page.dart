@@ -14,6 +14,15 @@ class _EarningsPageState extends State<EarningsPage> {
   String selectedSort = "amount";
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
+  num totalEarnings = 0;
+
+  Future<void> _calculateTotalEarnings() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('earnings').get();
+    num sum = snapshot.docs.fold(0, (total, doc) => total + (doc['amount'] as num));
+    setState(() {
+      totalEarnings = sum;
+    });
+  }
 
   Future<String> _fetchProviderName(String providerId) async {
     DocumentSnapshot providerDoc = await FirebaseFirestore.instance.collection('service_providers').doc(providerId).get();
@@ -32,6 +41,7 @@ class _EarningsPageState extends State<EarningsPage> {
         _selectedStartDate = pickedRange.start;
         _selectedEndDate = pickedRange.end;
       });
+      _calculateTotalEarnings();
     }
   }
 
@@ -62,6 +72,12 @@ class _EarningsPageState extends State<EarningsPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _calculateTotalEarnings();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -79,6 +95,13 @@ class _EarningsPageState extends State<EarningsPage> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              "Total Earnings: \$${totalEarnings.toStringAsFixed(2)}",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: DropdownButton<String>(
@@ -120,7 +143,7 @@ class _EarningsPageState extends State<EarningsPage> {
                         String providerName = providerSnapshot.hasData ? providerSnapshot.data! : 'Loading...';
                         return ListTile(
                           title: Text("Provider: $providerName"),
-                          subtitle: Text("Provider ID: ${earning['providerID']}\nAmount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
+                          subtitle: Text("Amount: \$${earning['amount']}\nDate: ${DateFormat.yMMMd().format((earning['date'] as Timestamp).toDate())}"),
                         );
                       },
                     );
