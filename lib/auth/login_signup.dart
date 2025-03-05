@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';  // For getting location
+import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:online_service_booking/user/pages/home_page.dart';
 import 'package:online_service_booking/provider/pages/home_page.dart';
@@ -68,6 +69,20 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
       print("⚠️ Error fetching location: $e");
       currentLocation = null; // Handle location failure
     }
+  }
+
+  // Function to fetch detailed address using latitude and longitude
+  Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        return "${place.name}, ${place.street}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
+      }
+    } catch (e) {
+      print("Error fetching address: $e");
+    }
+    return "Unknown Address";
   }
 
   // 🔹 Function to Handle Login
@@ -184,6 +199,12 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           print("⚠️ No location obtained! Defaulting to 0,0.");
         }
       }
+
+      String? address;
+      if (role == "customer" && currentLocation != null) {
+        address = await getAddressFromCoordinates(currentLocation!.latitude, currentLocation!.longitude);
+      }
+
       //attempt to create user
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -231,6 +252,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
           "location": currentLocation != null
               ? GeoPoint(currentLocation!.latitude, currentLocation!.longitude)
               : GeoPoint(0.0, 0.0),
+          "address": address ?? "Set Location",
           "dob": role == "customer" ? dobController.text : null,
           "iconUrl": "https://cdn-icons-png.flaticon.com/512/7880/7880189.png",
           "gender": role == "customer" && gender != null ? gender : "Not specified",
@@ -339,7 +361,7 @@ class _LoginSignupPageState extends State<LoginSignupPage> {
                               children: [
                                 TextField(
                                   controller: nameController,
-                                  decoration: InputDecoration(labelText: "Business Name", labelStyle: TextStyle(color: Colors.white)),
+                                  decoration: InputDecoration(labelText: role == "service_provider" ? "Business Name" : "Name", labelStyle: TextStyle(color: Colors.white)),
                                   style: TextStyle(color: Colors.white),
                                 ),
                                 TextField(

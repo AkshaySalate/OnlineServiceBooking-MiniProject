@@ -9,11 +9,15 @@ Purpose: To store user details, which could either be customers or service provi
 
 json
 {
-  "userID": "abc123",
   "name": "John Doe",
   "email": "john@example.com",
-  "role": "customer",   // Can be "customer" or "provider"
-  "status": "active"    // Active or Inactive
+  "phone": "+91 8999888921",
+  "address": "........",
+  "dob": "......",
+  "gender": ....,
+  "role: ......,
+  "iconUrl": ....,
+  "location": ...,
 }
 
 
@@ -23,28 +27,26 @@ Purpose: To store service provider details, including the services they offer an
 
 json
 {
-  "providerID": "xyz456",
   "name": "DJ Alex",
-  "serviceCategories": ["DJ", "Music Bands"],  // List of services provided
-  "pricing": "5000 INR/event",
-  "availability": ["Monday", "Saturday"],   // Days when they are available
-  "status": "approved"   // Provider approval status
-  "rating": 4.5
+  "serviceCategories": ....,
+  "availability": ....,
+  "email",
+  "experience",
+  'location",
+  "approved",
+  "role":
+  "phone"
 }
 
 
 3. Services Collection
-
-Purpose: To store the different types of services offered (Caterers, DJs, Photographers, etc.), along with associated details like description, price range, and rating.
-
 json
 {
-  "serviceID": "srv001",
   "serviceCategory": "Caterers",     // Type of service (Catering, Decorators, etc.)
   "description": "Food & beverage providers for events",
   "fullDescription": "We provide high-quality catering services for all types of events, from weddings to corporate gatherings. Our services include buffet-style catering, plated meals, and custom menus to suit your needs.",  // Full description
-  "priceRange": "2000-5000 INR",     // Price range for the service
-  "logoIconURL": "https://link-to-logo-icon.com/logo.png"  // URL for logo icon
+  "priceRange": "2000",     // Price range for the service
+  "icon": "https://link-to-logo-icon.com/logo.png"  // URL for logo icon
 }
 
 
@@ -54,12 +56,12 @@ Purpose: To store booking details for each event, linking customers with service
 
 json
 {
-  "bookingID": "booking1",
   "customerID": "abc123",       // Customer booking the service
   "providerID": "xyz456",       // Service provider offering the service
   "serviceCategory": "DJ",      // Service type (DJ, Catering, etc.)
   "eventDate": "2025-02-15",    // Date of the event
   "status": "pending"           // Booking status (pending, confirmed, completed)
+  "amount":
 }
 
 
@@ -85,9 +87,8 @@ Purpose: To store notifications for users (both customers and providers), like b
 json
 {
   "notificationID": "notif001",
-  "userID": "abc123",            // Customer or provider receiving the notification
+  "providerId": "abc123",            // provider receiving the notification
   "message": "New booking request from customer!",
-  "type": "booking",             // Type of notification (booking, review, etc.)
   "read": false,                 // Whether the notification has been read
   "timestamp": "2025-02-15T10:30:00Z"
 }
