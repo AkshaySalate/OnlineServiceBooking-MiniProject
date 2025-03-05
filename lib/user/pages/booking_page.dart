@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:online_service_booking/user/widgets/shared_footer.dart';
 import 'package:online_service_booking/chat/chat_screen.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:online_service_booking/theme.dart';
 
 class BookingPage extends StatefulWidget {
   final String customerId;
@@ -183,79 +184,92 @@ class _BookingPageState extends State<BookingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("My Bookings")),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : userBookings.isEmpty
-            ? Center(child: Text("No bookings found."))
-            : ListView.builder(
-              itemCount: userBookings.length,
-              itemBuilder: (context, index) {
-                var booking = userBookings[index];
-                return Card(
-                  margin: EdgeInsets.all(10),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Display the service type from the services collection
-                        Text("📌 Service Type: ${booking['serviceType']}",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 5),
-                        Text("👤 Provider: ${booking['providerName']}",
-                            style: TextStyle(fontSize: 16)),
-                        Text("📍 Address: ${booking['providerAddress']}",
-                            style: TextStyle(fontSize: 14)),
-                        Text("📅 Date: ${booking['eventDate']}",
-                            style: TextStyle(fontSize: 14)),
-                        Text("🟢 Status: ${booking['status']}",
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                _getStatusColor(booking['status']))),
-                        if (booking['status'].toString().toLowerCase() == 'completed') ...[
-                          SizedBox(height: 5),
-                          Text("💰 Amount Paid: ₹${booking['amount']}",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-                        ],
-                        SizedBox(height: 10),
+      appBar: AppTheme.gradientAppBar("My Bookings"),
+      body: Container(
+        decoration: AppTheme.gradientBackground,
+        child: Stack(
+          children: [
+            ...AppTheme.floatingIcons(context),
+            _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : userBookings.isEmpty
+                ? Center(child: Text("No bookings found.", style: Theme.of(context).textTheme.bodyMedium))
+                  : ListView.builder(
+                    itemCount: userBookings.length,
+                    itemBuilder: (context, index) {
+                      var booking = userBookings[index];
+                      return Card(
+                        shape: AppTheme.cardTheme().shape, // Themed Card
+                        color: AppTheme.cardTheme().color,
+                        elevation: AppTheme.cardTheme().elevation,
+                        margin: AppTheme.cardTheme().margin,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Display the service type from the services collection
+                              Text("📌 Service Type: ${booking['serviceType']}",
+                                  style: AppTheme.cardTitleTextStyle()),
+                              SizedBox(height: 5),
+                              Text("👤 Provider: ${booking['providerName']}",
+                                  style: AppTheme.cardDescriptionTextStyle()),
+                              Text("📍 Address: ${booking['providerAddress']}",
+                                  style: AppTheme.cardDescriptionTextStyle()),
+                              Text("📅 Date: ${booking['eventDate']}",
+                                  style: AppTheme.cardDescriptionTextStyle()),
+                              Text("🟢 Status: ${booking['status']}",
+                                  style: AppTheme.cardDescriptionTextStyle().copyWith(
+                                      fontWeight: FontWeight.bold, color: _getStatusColor(booking['status']))),
+                              if (booking['status'].toString().toLowerCase() == 'completed') ...[
+                                SizedBox(height: 5),
+                                Text("💰 Amount Paid: ₹${booking['amount']}",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                              ],
+                              SizedBox(height: 10),
 
-                        // ⭐ Review Section for Completed Bookings
-                        if (booking['status'] == "Completed")
-                          booking["hasReviewed"]
-                              ? _displayExistingReview(booking["review"])
-                              : ElevatedButton(
-                            onPressed: () => _showReviewDialog(booking["providerID"]),
-                            child: Text("Write a Review"),
-                          ),
-
-                        // Display chat button if booking status is accepted (here we use "confirmed")
-                        if (booking['status'].toString().toLowerCase() == 'pending' ||
-                            booking['status'].toString().toLowerCase() == 'upcoming')
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    customerId: widget.customerId,
-                                    providerId: booking['providerID'],
+                              // ⭐ Review Section for Completed Bookings
+                              if (booking['status'] == "Completed")
+                                booking["hasReviewed"]
+                                    ? _displayExistingReview(booking["review"])
+                                    : ElevatedButton(
+                                  onPressed: () => _showReviewDialog(booking["providerID"]),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange.shade700, // Themed Review Button
+                                    foregroundColor: Colors.white,
                                   ),
+                                  child: Text("Write a Review"),
                                 ),
-                              );
-                            },
-                            child: Text("Chat"),
+
+                              // Display chat button if booking status is accepted (here we use "confirmed")
+                              if (booking['status'].toString().toLowerCase() == 'pending' ||
+                                  booking['status'].toString().toLowerCase() == 'upcoming')
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ChatScreen(
+                                          customerId: widget.customerId,
+                                          providerId: booking['providerID'],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green.shade700, // Themed Chat Button
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text("Chat"),
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                        ),
+                      );
+                    },
+                   ),
+          ],
+        ),
       ),
       bottomNavigationBar: SharedFooter(
           customerId: widget.customerId, currentIndex: 2),
