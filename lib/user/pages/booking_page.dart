@@ -5,6 +5,7 @@ import 'package:online_service_booking/user/widgets/shared_footer.dart';
 import 'package:online_service_booking/chat/chat_screen.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:online_service_booking/theme.dart';
+//testing
 
 class BookingPage extends StatefulWidget {
   final String customerId;
