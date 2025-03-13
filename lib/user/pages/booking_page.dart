@@ -228,39 +228,51 @@ class _BookingPageState extends State<BookingPage> {
                               ],
                               SizedBox(height: 10),
 
-                              // ⭐ Review Section for Completed Bookings
-                              if (booking['status'] == "Completed")
-                                booking["hasReviewed"]
-                                    ? _displayExistingReview(booking["review"])
-                                    : ElevatedButton(
-                                  onPressed: () => _showReviewDialog(booking["providerID"]),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange.shade700, // Themed Review Button
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: Text("Write a Review"),
-                                ),
-
-                              // Display chat button if booking status is accepted (here we use "confirmed")
-                              if (booking['status'].toString().toLowerCase() == 'pending' ||
+                              // ⭐ Review and Chat Buttons in a Row
+                              if (booking['status'] == "Completed" ||
+                                  booking['status'].toString().toLowerCase() == 'pending' ||
                                   booking['status'].toString().toLowerCase() == 'upcoming')
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ChatScreen(
-                                          customerId: widget.customerId,
-                                          providerId: booking['providerID'],
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (booking['status'] == "Completed")
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width * 0.7,
+                                        child: booking["hasReviewed"]
+                                            ? _displayExistingReview(booking["review"])
+                                            : ElevatedButton(
+                                          onPressed: () => _showReviewDialog(booking["providerID"]),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.orange.shade700,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text("Write a Review"),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade700, // Themed Chat Button
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: Text("Chat"),
+                                    if (booking['status'].toString().toLowerCase() == 'pending' ||
+                                        booking['status'].toString().toLowerCase() == 'upcoming')
+                                      SizedBox(
+                                        width: MediaQuery.of(context).size.width * 0.7,
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => ChatScreen(
+                                                  customerId: widget.customerId,
+                                                  providerId: booking['providerID'],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green.shade700,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text("Chat"),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                             ],
                           ),
