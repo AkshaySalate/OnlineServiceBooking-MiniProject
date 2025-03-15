@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 import 'package:online_service_booking/theme.dart';
+import 'package:online_service_booking/user/pages/home_page.dart';
 
 class BookingConfirmationPage extends StatelessWidget {
   final String bookingId;
@@ -29,6 +30,7 @@ class BookingConfirmationPage extends StatelessWidget {
             var bookingData = snapshot.data!.data() as Map<String, dynamic>;
             String serviceCategoryId = bookingData['serviceCategory'];
             String providerId = bookingData['providerID'];
+            String customerId = bookingData['customerID'];
 
             return FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance.collection("services").doc(serviceCategoryId).get(),
@@ -89,7 +91,13 @@ class BookingConfirmationPage extends StatelessWidget {
                                     SizedBox(height: 20),
                                     Center(
                                       child: ElevatedButton(
-                                        onPressed: () => Navigator.pop(context),
+                                        onPressed: () => Navigator.pushAndRemoveUntil(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => HomePage(customerId: customerId),
+                                          ),
+                                              (route) => false, // Removes all previous routes
+                                        ),
                                         style: AppTheme.cardButtonStyle().copyWith(
                                           padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 30, vertical: 12)),
                                           shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
