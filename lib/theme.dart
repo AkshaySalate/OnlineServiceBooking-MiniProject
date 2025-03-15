@@ -264,7 +264,7 @@ class AppTheme {
         top: screenHeight * 0.05,
         left: screenWidth * 0.08,
         child: Opacity(opacity: 0.5,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.17),
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.17),
         ),
       ),
       Positioned(
@@ -285,14 +285,14 @@ class AppTheme {
         top: screenHeight * 0.25,
         right: screenWidth * 0.15,
         child: Opacity(opacity: 0.5,
-          child: Icon(Icons.local_florist_sharp, color: Colors.red.shade200, size: screenWidth * 0.19),
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.19),
         ),
       ),
       Positioned(
         bottom: screenHeight * 0.12,
         left: screenWidth * 0.35,
         child: Opacity(opacity: 0.5,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.20),
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.20),
         ),
       ),
       Positioned(
@@ -311,14 +311,14 @@ class AppTheme {
         bottom: screenHeight * 0.25,
         left: screenWidth * 0.05,
         child: Opacity(opacity: 0.5,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.07),
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.07),
         ),
       ),
       Positioned(
         bottom: screenHeight * 0.27,
         right: screenWidth * 0.10,
         child: Opacity(opacity: 0.5,
-          child: Icon(Icons.local_florist, color: Colors.red.shade200, size: screenWidth * 0.2),
+          child: Icon(Icons.eco, color: Colors.red.shade200, size: screenWidth * 0.2),
         ),
       ),
       Positioned(
