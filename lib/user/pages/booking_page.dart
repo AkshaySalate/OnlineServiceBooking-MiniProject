@@ -33,100 +33,46 @@ class _BookingPageState extends State<BookingPage> {
           .get();
 
       print("✅ Found ${bookingSnapshot.docs.length} bookings in Firestore");
-      print("🔄 Processing bookings...");
 
-      List<Map<String, dynamic>> fetchedBookings = [];
-
-      // Loop through each booking document
-      for (var doc in bookingSnapshot.docs) {
+      List<Future<Map<String, dynamic>>> bookingFutures = bookingSnapshot.docs.map((doc) async {
         var data = doc.data() as Map<String, dynamic>;
 
-        // ✅ Fetch the service price from `amount`
-        double amount = data.containsKey("amount") ? (data["amount"] as num).toDouble() : 0.0;
-        print("✅ Found amount: $amount");
+        double amount = (data["amount"] as num?)?.toDouble() ?? 0.0;
+        String eventDateFormatted = data["eventDate"] is Timestamp
+            ? (data["eventDate"] as Timestamp).toDate().toString()
+            : data["eventDate"].toString();
 
-        // Convert eventDate from Timestamp to a formatted string
-        String eventDateFormatted = data["eventDate"].toString();
-        if (data["eventDate"] is Timestamp) {
-          eventDateFormatted =
-              (data["eventDate"] as Timestamp).toDate().toString();
-        } else {
-          eventDateFormatted = data["eventDate"].toString();
-        }
+        // Fetch service & provider details in parallel
+        var serviceFuture = FirebaseFirestore.instance.collection("services").doc(data["serviceCategory"]).get();
+        var providerFuture = FirebaseFirestore.instance.collection("service_providers").doc(data["providerID"]).get();
 
-        // Fetch service provider details
-        DocumentSnapshot providerDoc = await FirebaseFirestore.instance
-            .collection("service_providers")
-            .doc(data["providerID"])
-            .get();
+        var results = await Future.wait([serviceFuture, providerFuture]);
+        var serviceDoc = results[0];
+        var providerDoc = results[1];
 
-        // Fetch service details (service type)
-        DocumentSnapshot serviceDoc = await FirebaseFirestore.instance
-            .collection("services")
-            .doc(data["serviceCategory"]) // booking's serviceCategory is the service document id
-            .get();
+        String serviceType = serviceDoc.exists ? serviceDoc["serviceCategory"] ?? "Unknown Service Type" : "Unknown Service Type";
+        String providerName = providerDoc.exists ? providerDoc["name"] ?? "Unknown Provider" : "Unknown Provider";
+        String providerAddress = providerDoc.exists && providerDoc["address"] != null ? providerDoc["address"] : "Address not available";
 
-        String serviceType = "Unknown Service Type";
-        if (serviceDoc.exists) {
-          var serviceData = serviceDoc.data() as Map<String, dynamic>;
-          serviceType = serviceData["serviceCategory"] ?? serviceType;
-        }
+        return {
+          "id": doc.id,
+          "serviceType": serviceType,
+          "eventDate": eventDateFormatted,
+          "status": data["status"],
+          "providerName": providerName,
+          "amount": amount,
+          "providerAddress": providerAddress,
+          "providerID": data["providerID"],
+        };
+      }).toList();
 
-        // Fetch existing review (if any)
-        QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
-            .collection("reviews")
-            .where("providerID", isEqualTo: data["providerID"])
-            .where("customerID", isEqualTo: widget.customerId)
-            .get();
-
-        bool hasReviewed = reviewSnapshot.docs.isNotEmpty;
-        Map<String, dynamic>? reviewData =
-        hasReviewed ? reviewSnapshot.docs.first.data() as Map<String, dynamic> : null;
-
-        String providerAddress = "Address not available";
-        if (providerDoc.exists) {
-          var providerData = providerDoc.data() as Map<String, dynamic>;
-          // Check if provider has a location (GeoPoint) field
-          if (providerData.containsKey("location") &&
-              providerData["location"] != null) {
-            GeoPoint providerLocation = providerData["location"];
-            providerAddress = await _getAddressFromLatLng(
-                providerLocation.latitude, providerLocation.longitude);
-          } else if (providerData.containsKey("address")) {
-            providerAddress = providerData["address"];
-          }
-        }
-
-        if (providerDoc.exists) {
-          var providerData = providerDoc.data() as Map<String, dynamic>;
-
-          // Build a booking map with all necessary details
-          Map<String, dynamic> booking = {
-            "id": doc.id, // Booking ID
-            // Here we use the serviceCategory field from the booking.
-            "serviceType": serviceType,
-            // You could update this logic if you wish to fetch details from the services collection.
-            "serviceName": data["serviceCategory"],
-            "eventDate": eventDateFormatted,
-            "status": data["status"],
-            "providerName": providerData["name"],
-            "amount": amount,
-            "providerAddress": providerAddress,
-            // Add providerID so that it can be passed to ChatScreen
-            "providerID": data["providerID"],
-            "hasReviewed": hasReviewed,
-            "review": reviewData,
-          };
-
-          fetchedBookings.add(booking);
-          print("✅ Added booking: ${data["serviceCategory"]} by ${providerData["name"]}");
-        }
-      }
+      // Wait for all bookings to be processed
+      userBookings = await Future.wait(bookingFutures);
 
       setState(() {
-        userBookings = fetchedBookings;
         _isLoading = false;
       });
+
       print("🎉 Total Bookings Displayed: ${userBookings.length}");
     } catch (e) {
       print("⚠️ Error fetching bookings: $e");
