@@ -198,85 +198,87 @@ class _BookingPageState extends State<BookingPage> {
                     itemCount: userBookings.length,
                     itemBuilder: (context, index) {
                       var booking = userBookings[index];
-                      return Card(
-                        shape: AppTheme.cardTheme().shape, // Themed Card
-                        color: AppTheme.cardTheme().color,
-                        elevation: AppTheme.cardTheme().elevation,
-                        margin: AppTheme.cardTheme().margin,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Display the service type from the services collection
-                              Text("📌 Service Type: ${booking['serviceType']}",
-                                  style: AppTheme.cardTitleTextStyle()),
-                              SizedBox(height: 5),
-                              Text("👤 Provider: ${booking['providerName']}",
-                                  style: AppTheme.cardDescriptionTextStyle()),
-                              Text("📍 Address: ${booking['providerAddress']}",
-                                  style: AppTheme.cardDescriptionTextStyle()),
-                              Text("📅 Date: ${booking['eventDate']}",
-                                  style: AppTheme.cardDescriptionTextStyle()),
-                              Text("🟢 Status: ${booking['status']}",
-                                  style: AppTheme.cardDescriptionTextStyle().copyWith(
-                                      fontWeight: FontWeight.bold, color: _getStatusColor(booking['status']))),
-                              if (booking['status'].toString().toLowerCase() == 'completed') ...[
-                                SizedBox(height: 5),
-                                Text("💰 Amount Paid: ₹${booking['amount']}",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-                              ],
-                              SizedBox(height: 10),
-
-                              // ⭐ Review and Chat Buttons in a Row
-                              if (booking['status'] == "Completed" ||
-                                  booking['status'].toString().toLowerCase() == 'pending' ||
-                                  booking['status'].toString().toLowerCase() == 'upcoming')
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          double cardWidth = constraints.maxWidth * 0.9;
+                          return Center(
+                            child: Card(
+                              shape: AppTheme.cardTheme().shape,
+                              color: AppTheme.cardTheme().color,
+                              elevation: AppTheme.cardTheme().elevation,
+                              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                              child: Container(
+                                width: cardWidth,
+                                padding: EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (booking['status'] == "Completed")
-                                      SizedBox(
-                                        width: MediaQuery.of(context).size.width * 0.7,
-                                        child: booking["hasReviewed"]
-                                            ? _displayExistingReview(booking["review"])
-                                            : ElevatedButton(
-                                          onPressed: () => _showReviewDialog(booking["providerID"]),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.orange.shade700,
-                                            foregroundColor: Colors.white,
-                                          ),
-                                          child: Text("Write a Review"),
-                                        ),
-                                      ),
-                                    if (booking['status'].toString().toLowerCase() == 'pending' ||
-                                        booking['status'].toString().toLowerCase() == 'upcoming')
-                                      SizedBox(
-                                        width: MediaQuery.of(context).size.width * 0.7,
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => ChatScreen(
-                                                  customerId: widget.customerId,
-                                                  providerId: booking['providerID'],
-                                                ),
+                                    Text("📌 Service Type: ${booking['serviceType']}",
+                                        style: AppTheme.cardTitleTextStyle()),
+                                    SizedBox(height: 5),
+                                    Text("👤 Provider: ${booking['providerName']}",
+                                        style: AppTheme.cardDescriptionTextStyle()),
+                                    Text("📍 Address: ${booking['providerAddress']}",
+                                        style: AppTheme.cardDescriptionTextStyle()),
+                                    Text("📅 Date: ${booking['eventDate']}",
+                                        style: AppTheme.cardDescriptionTextStyle()),
+                                    Text("🟢 Status: ${booking['status']}",
+                                        style: AppTheme.cardDescriptionTextStyle().copyWith(
+                                            fontWeight: FontWeight.bold, color: _getStatusColor(booking['status']))),
+                                    if (booking['status'].toString().toLowerCase() == 'completed') ...[
+                                      SizedBox(height: 5),
+                                      Text("💰 Amount Paid: ₹${booking['amount']}",
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                                    ],
+                                    SizedBox(height: 10),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (booking['status'] == "Completed")
+                                          SizedBox(
+                                            width: cardWidth * 0.7,
+                                            child: booking["hasReviewed"]
+                                                ? _displayExistingReview(booking["review"])
+                                                : ElevatedButton(
+                                              onPressed: () => _showReviewDialog(booking["providerID"]),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.orange.shade700,
+                                                foregroundColor: Colors.white,
                                               ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green.shade700,
-                                            foregroundColor: Colors.white,
+                                              child: Text("Write a Review"),
+                                            ),
                                           ),
-                                          child: Text("Chat"),
-                                        ),
-                                      ),
+                                        if (booking['status'].toString().toLowerCase() == 'pending' ||
+                                            booking['status'].toString().toLowerCase() == 'upcoming')
+                                          SizedBox(
+                                            width: cardWidth * 0.7,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => ChatScreen(
+                                                      customerId: widget.customerId,
+                                                      providerId: booking['providerID'],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green.shade700,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              child: Text("Chat"),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                            ],
-                          ),
-                        ),
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                    ),
@@ -308,61 +310,103 @@ class _BookingPageState extends State<BookingPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Leave a Review"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Rate your experience:"),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < rating ? Icons.star : Icons.star_border,
-                      color: Colors.orange,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        rating = index + 1.0;
-                      });
-                    },
-                  );
-                }),
-              ),
-              TextField(
-                controller: reviewController,
-                decoration: InputDecoration(hintText: "Write your review..."),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text("Cancel"),
-              onPressed: () => Navigator.pop(context),
-            ),
-            ElevatedButton(
-              child: Text("Submit"),
-              onPressed: () async {
-                // Save review to Firestore
-                await FirebaseFirestore.instance.collection("reviews").add({
-                  "providerID": providerId,
-                  "customerID": widget.customerId,
-                  "rating": rating,
-                  "comment": reviewController.text,
-                  "timestamp": FieldValue.serverTimestamp(),
-                });
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text("Leave a Review", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 15),
+                    Text("Rate your experience:", style: TextStyle(fontSize: 16)),
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              rating = index + 1.0;
+                            });
+                          },
+                          child: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.orange,
+                            size: 32,
+                          ),
+                        );
+                      }),
+                    ),
+                    SizedBox(height: 10),
+                    Text("Selected Rating: ${rating.toInt()} Stars", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: reviewController,
+                      decoration: InputDecoration(
+                        hintText: "Write your review...",
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      maxLines: 3,
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text("Cancel", style: TextStyle(color: Colors.red, fontSize: 16)),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.shade700,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text("Submit", style: TextStyle(fontSize: 16)),
+                          onPressed: () async {
+                            await FirebaseFirestore.instance.collection("reviews").add({
+                              "providerID": providerId,
+                              "customerID": widget.customerId,
+                              "rating": rating,
+                              "comment": reviewController.text,
+                              "timestamp": FieldValue.serverTimestamp(),
+                            });
 
-                setState(() {
-                  // Refresh bookings to show the submitted review
-                  _fetchUserBookings();
-                });
+                            setState(() {
+                              _fetchUserBookings();
+                            });
 
-                Navigator.pop(context);
-              },
-            ),
-          ],
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
