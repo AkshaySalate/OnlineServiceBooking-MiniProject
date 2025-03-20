@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'admin_login_screen.dart';
 import 'bookings_page.dart';
 import 'earnings_page.dart';
+import 'services_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -92,6 +93,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ListTile(leading: Icon(Icons.business), title: Text("Providers"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProvidersPage()))),
             ListTile(leading: Icon(Icons.book_online), title: Text("Bookings"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => BookingsPage()))),
             ListTile(leading: Icon(Icons.currency_rupee), title: Text("Earnings"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => EarningsPage()))),
+            ListTile(leading: Icon(Icons.design_services), title: Text("Services"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServicesPage())),),
           ],
         ),
       ),
